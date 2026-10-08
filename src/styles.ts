@@ -39,4 +39,19 @@ export const styles = StyleSheet.create({
     backgroundColor: "#2b7a4b", padding: 16, borderRadius: 10,
     alignItems: "center", marginTop: 20,
   },
+
+    gameButton: {
+    backgroundColor: "#1f6feb", padding: 16, borderRadius: 10,
+    alignItems: "center", marginTop: 20,
+  },
+  gameCard: {
+    backgroundColor: "#1a1a1a", borderRadius: 12, padding: 16,
+    marginBottom: 20, borderWidth: 1, borderColor: "#333",
+  },
+  gameTitle: { color: "#ccc", fontSize: 15, fontWeight: "bold" },
+  gameScore: { color: "#fff", fontSize: 32, fontWeight: "bold", marginVertical: 8 },
+  statsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
+  statBox: { alignItems: "center", flex: 1 },
+  statValue: { color: "#ff8c00", fontSize: 24, fontWeight: "bold" },
+  statLabel: { color: "#888", fontSize: 12, marginTop: 2 },
 });

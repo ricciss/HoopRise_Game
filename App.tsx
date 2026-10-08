@@ -15,6 +15,7 @@ import {
   TRAIN_COST,
   REST_GAIN,
 } from "./src/game/training";
+import { simulateGame, GameResult, GAME_COST } from "./src/game/simulation";
 import { styles } from "./src/styles";
 
 const POSITIONS: Position[] = ["PG", "SG", "SF", "PF", "C"];
@@ -35,6 +36,7 @@ export default function App() {
   const [week, setWeek] = useState(1);
   const [energy, setEnergy] = useState(MAX_ENERGY);
   const [message, setMessage] = useState("");
+  const [lastGame, setLastGame] = useState<GameResult | null>(null);
 
   function handleCreate() {
     if (name.trim().length === 0) return;
@@ -42,6 +44,7 @@ export default function App() {
     setWeek(1);
     setEnergy(MAX_ENERGY);
     setMessage("");
+    setLastGame(null);
   }
 
   function handleTrain(stat: keyof Ratings) {
@@ -61,6 +64,15 @@ export default function App() {
     setEnergy(rest(energy));
     setWeek(week + 1);
     setMessage(`You rested. +${REST_GAIN} energy`);
+  }
+
+  function handlePlayGame() {
+    if (!player) return;
+    const result = simulateGame(player, energy);
+    setLastGame(result);
+    setEnergy(Math.max(0, energy - GAME_COST));
+    setWeek(week + 1);
+    setMessage(result.won ? "Victory!" : "Tough loss.");
   }
 
   return (
@@ -120,6 +132,35 @@ export default function App() {
 
           <Text style={styles.message}>{message || " "}</Text>
 
+          {lastGame && (
+            <View style={styles.gameCard}>
+              <Text style={styles.gameTitle}>
+                {lastGame.won ? "WIN" : "LOSS"} vs {lastGame.opponent}
+              </Text>
+              <Text style={styles.gameScore}>
+                {lastGame.teamScore} - {lastGame.opponentScore}
+              </Text>
+              <View style={styles.statsRow}>
+                <View style={styles.statBox}>
+                  <Text style={styles.statValue}>{lastGame.points}</Text>
+                  <Text style={styles.statLabel}>PTS</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={styles.statValue}>{lastGame.rebounds}</Text>
+                  <Text style={styles.statLabel}>REB</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={styles.statValue}>{lastGame.assists}</Text>
+                  <Text style={styles.statLabel}>AST</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={styles.statValue}>{lastGame.minutes}</Text>
+                  <Text style={styles.statLabel}>MIN</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
           {(Object.keys(player.ratings) as (keyof Ratings)[]).map((key) => (
             <View key={key} style={styles.ratingRow}>
               <Text style={styles.ratingLabel}>{LABELS[key]}</Text>
@@ -145,8 +186,13 @@ export default function App() {
           ))}
 
           <Text style={styles.hint}>
-            Training costs {TRAIN_COST} energy. Each action takes one week.
+            Training costs {TRAIN_COST} energy, a game costs {GAME_COST}. Each
+            action takes one week.
           </Text>
+
+          <Pressable style={styles.gameButton} onPress={handlePlayGame}>
+            <Text style={styles.buttonText}>Play game</Text>
+          </Pressable>
 
           <Pressable style={styles.restButton} onPress={handleRest}>
             <Text style={styles.buttonText}>Rest</Text>
