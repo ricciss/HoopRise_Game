@@ -24,6 +24,13 @@ import {
   summarize,
   applyAging,
 } from "../game/season";
+import {
+  GameEvent,
+  rollEvent,
+  findEvent,
+  applyEffect,
+  describeEffect,
+} from "../game/events";
 import { saveGame, loadGame, clearGame } from "../storage";
 
 export const LABELS: Record<keyof Ratings, string> = {
@@ -61,6 +68,8 @@ interface GameState {
   nextQuarter: () => void;
   skipGame: () => void;
   closeGame: () => void;
+  event: GameEvent | null;
+  chooseEvent: (index: number) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -84,6 +93,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     null
   );
   const [liveGame, setLiveGame] = useState<LiveGameState | null>(null);
+  const [event, setEvent] = useState<GameEvent | null>(null);
 
   // Load saved game on startup
   useEffect(() => {
@@ -96,6 +106,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setSeason(data.season ?? 1);
         setSeasonStats(data.seasonStats ?? emptyStats());
         setSeasonSummary(data.seasonSummary ?? null);
+        setEvent(data.eventId ? findEvent(data.eventId) : null);
       }
       setLoaded(true);
     });
@@ -113,11 +124,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
         season,
         seasonStats,
         seasonSummary,
+        eventId: event ? event.id : null,
       });
     } else {
       clearGame();
     }
-  }, [loaded, player, week, energy, lastGame, season, seasonStats, seasonSummary]);
+  }, [
+    loaded,
+    player,
+    week,
+    energy,
+    lastGame,
+    season,
+    seasonStats,
+    seasonSummary,
+    event,
+  ]);
 
   // Moves to the next week, or ends the season after the last week
   function advance(nextStats: SeasonStats) {
@@ -126,7 +148,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (week >= SEASON_WEEKS) {
       setSeasonSummary(summarize(season, player.age, nextStats));
     } else {
-      setWeek(week + 1);
+      const nextWeek = week + 1;
+      setWeek(nextWeek);
+      // Random events only happen in training weeks
+      if (!isGameWeek(nextWeek)) {
+        setEvent(rollEvent());
+      }
     }
   }
 
@@ -141,10 +168,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setSeasonStats(emptyStats());
     setSeasonSummary(null);
     setLiveGame(null);
+    setEvent(null);
   }
 
   function trainStat(stat: keyof Ratings) {
-    if (!player || isGameWeek(week)) return;
+    if (!player || isGameWeek(week) || event) return;
     if (energy < TRAIN_COST) {
       setMessage("Not enough energy. Rest first.");
       return;
@@ -157,7 +185,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }
 
   function restWeek() {
-    if (isGameWeek(week)) return;
+    if (isGameWeek(week) || event) return;
     setEnergy(rest(energy));
     setMessage(`You rested. +${REST_GAIN} energy`);
     advance(seasonStats);
@@ -173,6 +201,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
     advance(addGame(seasonStats, result));
   }
 
+  function chooseEvent(index: number) {
+    if (!player || !event) return;
+    const choice = event.choices[index];
+    if (!choice) return;
+    const result = applyEffect(player, energy, choice.effect);
+    setPlayer(result.player);
+    setEnergy(result.energy);
+    setMessage(`${choice.result} (${describeEffect(choice.effect)})`);
+    setEvent(null);
+  }
+
   function nextSeason() {
     if (!player) return;
     setPlayer(applyAging(player));
@@ -183,12 +222,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setSeasonSummary(null);
     setLastGame(null);
     setLiveGame(null);
+    setEvent(null);
     setMessage("A new season begins!");
   }
 
   function newCareer() {
     setPlayer(null);
     setLiveGame(null);
+    setEvent(null);
   }
 
   function nextQuarter() {
@@ -224,6 +265,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     nextQuarter,
     skipGame,
     closeGame,
+    event,
+    chooseEvent,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

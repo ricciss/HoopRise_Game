@@ -14,6 +14,7 @@ export interface SaveData {
   season?: number;
   seasonStats?: SeasonStats;
   seasonSummary?: SeasonSummary | null;
+  eventId?: string | null;
 }
 
 export async function saveGame(data: SaveData): Promise<void> {

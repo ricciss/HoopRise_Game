@@ -24,8 +24,7 @@ export const styles = StyleSheet.create({
   barBg: { flex: 1, height: 10, backgroundColor: "#222", borderRadius: 5, overflow: "hidden" },
   barFill: { height: 10, backgroundColor: "#ff8c00" },
   ratingValue: { color: "#fff", width: 36, textAlign: "right", fontSize: 15 },
-
-    weekText: { color: "#fff", fontSize: 20, fontWeight: "bold", marginBottom: 12 },
+  weekText: { color: "#fff", fontSize: 20, fontWeight: "bold", marginBottom: 12 },
   energyFill: { backgroundColor: "#3ddc84" },
   message: { color: "#ff8c00", fontSize: 16, marginVertical: 12, minHeight: 22 },
   trainButton: {
@@ -39,8 +38,7 @@ export const styles = StyleSheet.create({
     backgroundColor: "#2b7a4b", padding: 16, borderRadius: 10,
     alignItems: "center", marginTop: 20,
   },
-
-    gameButton: {
+  gameButton: {
     backgroundColor: "#1f6feb", padding: 16, borderRadius: 10,
     alignItems: "center", marginTop: 20,
   },
@@ -54,13 +52,25 @@ export const styles = StyleSheet.create({
   statBox: { alignItems: "center", flex: 1 },
   statValue: { color: "#ff8c00", fontSize: 24, fontWeight: "bold" },
   statLabel: { color: "#888", fontSize: 12, marginTop: 2 },
-    gameDay: { color: "#1f6feb", fontSize: 16, fontWeight: "bold", marginBottom: 12 },
+  gameDay: { color: "#1f6feb", fontSize: 16, fontWeight: "bold", marginBottom: 12 },
   trainDay: { color: "#3ddc84", fontSize: 16, fontWeight: "bold", marginBottom: 12 },
-    tableRow: { flexDirection: "row", alignItems: "center", paddingVertical: 5 },
+  tableRow: { flexDirection: "row", alignItems: "center", paddingVertical: 5 },
   tableName: { color: "#ccc", fontSize: 14, width: 44 },
   tableHead: { color: "#888", fontSize: 12, flex: 1, textAlign: "center" },
   tableCell: { color: "#fff", fontSize: 16, fontWeight: "bold", flex: 1, textAlign: "center" },
   divider: { height: 1, backgroundColor: "#333", marginVertical: 12 },
   quarterTitle: { color: "#ff8c00", fontSize: 14, fontWeight: "bold", marginTop: 12 },
   highlightText: { color: "#aaa", fontSize: 13, marginTop: 3 },
+  eventCard: {
+    backgroundColor: "#1a1a1a", borderRadius: 12, padding: 18,
+    borderWidth: 1, borderColor: "#ff8c00",
+  },
+  eventTag: { color: "#ff8c00", fontSize: 12, fontWeight: "bold", letterSpacing: 1 },
+  eventTitle: { color: "#fff", fontSize: 24, fontWeight: "bold", marginTop: 6 },
+  eventText: { color: "#ccc", fontSize: 16, marginTop: 10, marginBottom: 16, lineHeight: 22 },
+  choiceButton: {
+    backgroundColor: "#262626", borderRadius: 10, padding: 14, marginTop: 10,
+  },
+  choiceLabel: { color: "#fff", fontSize: 17, fontWeight: "bold" },
+  choiceEffect: { color: "#3ddc84", fontSize: 13, marginTop: 4 },
 });

@@ -6,6 +6,7 @@ import { SEASON_WEEKS } from "../game/season";
 import { useGame, LABELS } from "../store/GameContext";
 import GameCard from "../components/GameCard";
 import LiveGame from "../components/LiveGame";
+import EventCard from "../components/EventCard";
 import { styles } from "../styles";
 
 export default function HomeScreen() {
@@ -17,6 +18,7 @@ export default function HomeScreen() {
     message,
     lastGame,
     liveGame,
+    event,
     gameWeek,
     trainStat,
     restWeek,
@@ -33,6 +35,19 @@ export default function HomeScreen() {
         <Text style={styles.name}>{player.name}</Text>
         <Text style={styles.sub}>Game day</Text>
         <LiveGame />
+      </View>
+    );
+  }
+
+  // A random event must be answered before the week continues
+  if (event) {
+    return (
+      <View>
+        <Text style={styles.name}>{player.name}</Text>
+        <Text style={styles.sub}>
+          Season {season} · Week {week}/{SEASON_WEEKS} · Energy {energy}
+        </Text>
+        <EventCard />
       </View>
     );
   }
