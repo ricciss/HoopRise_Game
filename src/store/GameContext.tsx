@@ -44,6 +44,7 @@ interface GameState {
   message: string;
   lastGame: GameResult | null;
   seasonSummary: SeasonSummary | null;
+   seasonStats: SeasonStats;
   gameWeek: boolean;
   createCareer: (name: string, position: Position) => void;
   trainStat: (stat: keyof Ratings) => void;
@@ -185,6 +186,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     message,
     lastGame,
     seasonSummary,
+    seasonStats,
     gameWeek: isGameWeek(week),
     createCareer,
     trainStat,
