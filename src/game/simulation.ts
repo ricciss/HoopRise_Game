@@ -68,8 +68,8 @@ function simulateQuarter(
   let points = 0;
   const plays: string[] = [];
 
-  // Field goals
-  const attempts = around(minutes * 0.45, 1.5);
+  // Field goals: better shooters also take more shots
+  const attempts = around(minutes * (0.34 + r.shooting * 0.0035), 1.5);
   const fgChance = Math.min(0.65, (0.28 + r.shooting * 0.004) * form);
   for (let i = 0; i < attempts; i++) {
     const isThree = Math.random() < 0.3;
@@ -100,12 +100,14 @@ function simulateQuarter(
     highlights.push(play);
   }
 
-  const teammates = around(17 + (teamAvg - 45) * 0.125, 4);
-  const opponentScore = around(21.5, 4);
+  // Rebounds and assists help the team win, defense holds the opponent down
+  const impact = rebounds * 0.2 + assists * 0.3;
+  const teammates = around(17 + (teamAvg - 45) * 0.08, 4);
+  const opponentScore = around(22 - (r.defense - 45) * 0.07, 4);
 
   return {
     quarter,
-    teamScore: points + teammates,
+    teamScore: Math.round(points + teammates + impact),
     opponentScore,
     minutes,
     points,
