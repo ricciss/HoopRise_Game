@@ -22,7 +22,12 @@ export function train(
   const current = player.ratings[stat];
 
   // The higher the rating, the slower it grows
-  const maxGain = current < 50 ? 3 : current < 70 ? 2 : 1;
+  const base = current < 50 ? 3 : current < 70 ? 2 : 1;
+
+  // Young players develop faster, older players slower
+  const ageBonus = player.age <= 21 ? 1 : player.age >= 28 ? -1 : 0;
+  const maxGain = Math.max(1, base + ageBonus);
+
   const roll = 1 + Math.floor(Math.random() * maxGain);
   const gain = Math.min(99 - current, roll);
 

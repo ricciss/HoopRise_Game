@@ -16,6 +16,16 @@ import {
   REST_GAIN,
 } from "./src/game/training";
 import { simulateGame, GameResult, GAME_COST } from "./src/game/simulation";
+import {
+  SEASON_WEEKS,
+  isGameWeek,
+  SeasonStats,
+  SeasonSummary,
+  emptyStats,
+  addGame,
+  summarize,
+  applyAging,
+} from "./src/game/season";
 import { saveGame, loadGame, clearGame } from "./src/storage";
 import { styles } from "./src/styles";
 
@@ -36,18 +46,26 @@ export default function App() {
   const [position, setPosition] = useState<Position>("PG");
   const [player, setPlayer] = useState<Player | null>(null);
   const [week, setWeek] = useState(1);
+  const [season, setSeason] = useState(1);
   const [energy, setEnergy] = useState(MAX_ENERGY);
   const [message, setMessage] = useState("");
   const [lastGame, setLastGame] = useState<GameResult | null>(null);
+  const [seasonStats, setSeasonStats] = useState<SeasonStats>(emptyStats());
+  const [seasonSummary, setSeasonSummary] = useState<SeasonSummary | null>(
+    null
+  );
 
   // Load saved game on startup
   useEffect(() => {
     loadGame().then((data) => {
       if (data) {
         setPlayer(data.player);
-        setWeek(data.week);
+        setWeek(Math.min(data.week, SEASON_WEEKS));
         setEnergy(data.energy);
         setLastGame(data.lastGame);
+        setSeason(data.season ?? 1);
+        setSeasonStats(data.seasonStats ?? emptyStats());
+        setSeasonSummary(data.seasonSummary ?? null);
       }
       setLoaded(true);
     });
@@ -57,23 +75,45 @@ export default function App() {
   useEffect(() => {
     if (!loaded) return;
     if (player) {
-      saveGame({ player, week, energy, lastGame });
+      saveGame({
+        player,
+        week,
+        energy,
+        lastGame,
+        season,
+        seasonStats,
+        seasonSummary,
+      });
     } else {
       clearGame();
     }
-  }, [loaded, player, week, energy, lastGame]);
+  }, [loaded, player, week, energy, lastGame, season, seasonStats, seasonSummary]);
+
+  // Moves to the next week, or ends the season after the last week
+  function advance(nextStats: SeasonStats) {
+    if (!player) return;
+    setSeasonStats(nextStats);
+    if (week >= SEASON_WEEKS) {
+      setSeasonSummary(summarize(season, player.age, nextStats));
+    } else {
+      setWeek(week + 1);
+    }
+  }
 
   function handleCreate() {
     if (name.trim().length === 0) return;
     setPlayer(createPlayer(name.trim(), position));
     setWeek(1);
+    setSeason(1);
     setEnergy(MAX_ENERGY);
     setMessage("");
     setLastGame(null);
+    setSeasonStats(emptyStats());
+    setSeasonSummary(null);
   }
 
   function handleTrain(stat: keyof Ratings) {
-    if (!player) return;
+    if (!player || isGameWeek(week)) return;
     if (energy < TRAIN_COST) {
       setMessage("Not enough energy. Rest first.");
       return;
@@ -81,23 +121,36 @@ export default function App() {
     const result = train(player, stat, energy);
     setPlayer(result.player);
     setEnergy(result.energy);
-    setWeek(week + 1);
     setMessage(`${LABELS[stat]} +${result.gain}`);
+    advance(seasonStats);
   }
 
   function handleRest() {
+    if (isGameWeek(week)) return;
     setEnergy(rest(energy));
-    setWeek(week + 1);
     setMessage(`You rested. +${REST_GAIN} energy`);
+    advance(seasonStats);
   }
 
   function handlePlayGame() {
-    if (!player) return;
+    if (!player || !isGameWeek(week)) return;
     const result = simulateGame(player, energy);
     setLastGame(result);
     setEnergy(Math.max(0, energy - GAME_COST));
-    setWeek(week + 1);
     setMessage(result.won ? "Victory!" : "Tough loss.");
+    advance(addGame(seasonStats, result));
+  }
+
+  function handleNextSeason() {
+    if (!player) return;
+    setPlayer(applyAging(player));
+    setSeason(season + 1);
+    setWeek(1);
+    setEnergy(MAX_ENERGY);
+    setSeasonStats(emptyStats());
+    setSeasonSummary(null);
+    setLastGame(null);
+    setMessage("A new season begins!");
   }
 
   if (!loaded) {
@@ -107,6 +160,8 @@ export default function App() {
       </View>
     );
   }
+
+  const gameWeek = isGameWeek(week);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -141,6 +196,46 @@ export default function App() {
             <Text style={styles.buttonText}>Create player</Text>
           </Pressable>
         </View>
+      ) : seasonSummary ? (
+        <View>
+          <Text style={styles.name}>{player.name}</Text>
+          <Text style={styles.sub}>
+            {player.position} · {player.age} years old
+          </Text>
+
+          <View style={styles.gameCard}>
+            <Text style={styles.gameTitle}>
+              SEASON {seasonSummary.season} COMPLETE
+            </Text>
+            <Text style={styles.gameScore}>
+              {seasonSummary.wins} - {seasonSummary.losses}
+            </Text>
+            <View style={styles.statsRow}>
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{seasonSummary.ppg}</Text>
+                <Text style={styles.statLabel}>PPG</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{seasonSummary.rpg}</Text>
+                <Text style={styles.statLabel}>RPG</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{seasonSummary.apg}</Text>
+                <Text style={styles.statLabel}>APG</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{seasonSummary.games}</Text>
+                <Text style={styles.statLabel}>GP</Text>
+              </View>
+            </View>
+          </View>
+
+          <Pressable style={styles.gameButton} onPress={handleNextSeason}>
+            <Text style={styles.buttonText}>
+              Start season {seasonSummary.season + 1}
+            </Text>
+          </Pressable>
+        </View>
       ) : (
         <View>
           <Text style={styles.name}>{player.name}</Text>
@@ -148,7 +243,13 @@ export default function App() {
             {player.position} · {player.age} years old · {player.heightCm} cm
           </Text>
 
-          <Text style={styles.weekText}>Week {week}</Text>
+          <Text style={styles.weekText}>
+            Season {season} · Week {week}/{SEASON_WEEKS}
+          </Text>
+          <Text style={gameWeek ? styles.gameDay : styles.trainDay}>
+            {gameWeek ? "Game day!" : "Training week"}
+          </Text>
+
           <View style={styles.ratingRow}>
             <Text style={styles.ratingLabel}>Energy</Text>
             <View style={styles.barBg}>
@@ -206,30 +307,34 @@ export default function App() {
                 />
               </View>
               <Text style={styles.ratingValue}>{player.ratings[key]}</Text>
-              <Pressable
-                style={[
-                  styles.trainButton,
-                  energy < TRAIN_COST && styles.trainButtonDisabled,
-                ]}
-                onPress={() => handleTrain(key)}
-              >
-                <Text style={styles.trainButtonText}>Train</Text>
-              </Pressable>
+              {!gameWeek && (
+                <Pressable
+                  style={[
+                    styles.trainButton,
+                    energy < TRAIN_COST && styles.trainButtonDisabled,
+                  ]}
+                  onPress={() => handleTrain(key)}
+                >
+                  <Text style={styles.trainButtonText}>Train</Text>
+                </Pressable>
+              )}
             </View>
           ))}
 
           <Text style={styles.hint}>
-            Training costs {TRAIN_COST} energy, a game costs {GAME_COST}. Each
-            action takes one week.
+            Training costs {TRAIN_COST} energy, a game costs {GAME_COST}. Games
+            are played every second week.
           </Text>
 
-          <Pressable style={styles.gameButton} onPress={handlePlayGame}>
-            <Text style={styles.buttonText}>Play game</Text>
-          </Pressable>
-
-          <Pressable style={styles.restButton} onPress={handleRest}>
-            <Text style={styles.buttonText}>Rest</Text>
-          </Pressable>
+          {gameWeek ? (
+            <Pressable style={styles.gameButton} onPress={handlePlayGame}>
+              <Text style={styles.buttonText}>Play game</Text>
+            </Pressable>
+          ) : (
+            <Pressable style={styles.restButton} onPress={handleRest}>
+              <Text style={styles.buttonText}>Rest</Text>
+            </Pressable>
+          )}
 
           <Pressable style={styles.button} onPress={() => setPlayer(null)}>
             <Text style={styles.buttonText}>New career (deletes save)</Text>

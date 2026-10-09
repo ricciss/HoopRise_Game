@@ -54,4 +54,6 @@ export const styles = StyleSheet.create({
   statBox: { alignItems: "center", flex: 1 },
   statValue: { color: "#ff8c00", fontSize: 24, fontWeight: "bold" },
   statLabel: { color: "#888", fontSize: 12, marginTop: 2 },
+    gameDay: { color: "#1f6feb", fontSize: 16, fontWeight: "bold", marginBottom: 12 },
+  trainDay: { color: "#3ddc84", fontSize: 16, fontWeight: "bold", marginBottom: 12 },
 });
