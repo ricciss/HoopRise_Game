@@ -39,6 +39,7 @@ import {
   describeInjury,
   WORSEN_CHANCE,
 } from "../game/injuries";
+import { Level, levelForSeason } from "../game/levels";
 import { saveGame, loadGame, clearGame } from "../storage";
 
 export const LABELS: Record<keyof Ratings, string> = {
@@ -60,6 +61,7 @@ interface GameState {
   player: Player | null;
   week: number;
   season: number;
+  level: Level;
   energy: number;
   message: string;
   lastGame: GameResult | null;
@@ -106,6 +108,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [liveGame, setLiveGame] = useState<LiveGameState | null>(null);
   const [event, setEvent] = useState<GameEvent | null>(null);
   const [injury, setInjury] = useState<Injury | null>(null);
+
+  // The level (high school, college, pro) depends on the season number
+  const level = levelForSeason(season);
 
   // Load saved game on startup
   useEffect(() => {
@@ -223,7 +228,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   function playGame() {
     if (!player || !isGameWeek(week) || injury) return;
-    const result = simulateGame(player, energy);
+    const result = simulateGame(player, energy, level);
     setLastGame(result);
     setLiveGame({ game: result, shown: 0 });
 
@@ -256,7 +261,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Game week while injured: play anyway, with a bad performance and a risk
   function playHurt() {
     if (!player || !isGameWeek(week) || !injury) return;
-    const result = simulateGame(player, Math.min(energy, 20));
+    const result = simulateGame(player, Math.min(energy, 20), level);
     setLastGame(result);
     setLiveGame({ game: result, shown: 0 });
     setEnergy(Math.max(0, energy - GAME_COST));
@@ -289,6 +294,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   function nextSeason() {
     if (!player) return;
+    const nextLevel = levelForSeason(season + 1);
     setPlayer(applyAging(player));
     setSeason(season + 1);
     setWeek(1);
@@ -299,7 +305,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setLiveGame(null);
     setEvent(null);
     setInjury(null);
-    setMessage("A new season begins!");
+    setMessage(
+      nextLevel.id !== level.id
+        ? `Welcome to ${nextLevel.name}! The competition is tougher.`
+        : "A new season begins!"
+    );
   }
 
   function newCareer() {
@@ -326,6 +336,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     player,
     week,
     season,
+    level,
     energy,
     message,
     lastGame,

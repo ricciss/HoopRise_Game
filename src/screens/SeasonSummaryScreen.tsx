@@ -1,16 +1,20 @@
 import { View, Text, Pressable } from "react-native";
+import { levelForSeason } from "../game/levels";
 import { useGame } from "../store/GameContext";
 import { styles } from "../styles";
 
 export default function SeasonSummaryScreen() {
-  const { player, seasonSummary, nextSeason } = useGame();
+  const { player, seasonSummary, level, nextSeason } = useGame();
   if (!player || !seasonSummary) return null;
+
+  const upcoming = levelForSeason(seasonSummary.season + 1);
+  const movingUp = upcoming.id !== level.id;
 
   return (
     <View>
       <Text style={styles.name}>{player.name}</Text>
       <Text style={styles.sub}>
-        {player.position} · {player.age} years old
+        {player.position} · {player.age} years old · {level.name}
       </Text>
 
       <View style={styles.gameCard}>
@@ -40,9 +44,20 @@ export default function SeasonSummaryScreen() {
         </View>
       </View>
 
+      {movingUp && (
+        <View>
+          <Text style={styles.gameDay}>Next level: {upcoming.name}</Text>
+          <Text style={styles.hint}>
+            The competition gets tougher, so expect fewer wins at first.
+          </Text>
+        </View>
+      )}
+
       <Pressable style={styles.gameButton} onPress={nextSeason}>
         <Text style={styles.buttonText}>
-          Start season {seasonSummary.season + 1}
+          {movingUp
+            ? `Move up to ${upcoming.name}`
+            : `Start season ${seasonSummary.season + 1}`}
         </Text>
       </Pressable>
     </View>

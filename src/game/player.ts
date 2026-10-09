@@ -1,12 +1,12 @@
 export type Position = "PG" | "SG" | "SF" | "PF" | "C";
 
 export interface Ratings {
-  shooting: number;   // metiens
-  passing: number;    // piespēles
-  defense: number;    // aizsardzība
-  rebounding: number; // atlēkušās
-  speed: number;      // ātrums
-  stamina: number;    // izturība
+  shooting: number;
+  passing: number;
+  defense: number;
+  rebounding: number;
+  speed: number;
+  stamina: number;
 }
 
 export interface Player {
@@ -17,7 +17,11 @@ export interface Player {
   ratings: Ratings;
 }
 
-// Vidējie sākuma rādītāji katrai pozīcijai
+export const START_AGE = 16;
+
+// Young players start a bit weaker than the base values
+const YOUNG_PENALTY = 4;
+
 const BASE: Record<Position, Ratings> = {
   PG: { shooting: 45, passing: 55, defense: 40, rebounding: 25, speed: 55, stamina: 45 },
   SG: { shooting: 55, passing: 40, defense: 40, rebounding: 30, speed: 50, stamina: 45 },
@@ -30,7 +34,7 @@ const HEIGHT: Record<Position, number> = {
   PG: 185, SG: 193, SF: 200, PF: 206, C: 211,
 };
 
-// Nejaušs skaitlis no -5 līdz +5
+// Random number from -5 to +5
 function jitter(): number {
   return Math.floor(Math.random() * 11) - 5;
 }
@@ -43,13 +47,13 @@ export function createPlayer(name: string, position: Position): Player {
   const base = BASE[position];
   const ratings = {} as Ratings;
   (Object.keys(base) as (keyof Ratings)[]).forEach((key) => {
-    ratings[key] = clamp(base[key] + jitter());
+    ratings[key] = clamp(base[key] - YOUNG_PENALTY + jitter());
   });
 
   return {
     name,
     position,
-    age: 18,
+    age: START_AGE,
     heightCm: HEIGHT[position] + jitter(),
     ratings,
   };

@@ -1,4 +1,5 @@
 import { Player, Ratings } from "./player";
+import { Level } from "./levels";
 
 export const GAME_COST = 20;
 
@@ -26,17 +27,6 @@ export interface GameResult {
   quarters?: QuarterResult[];
 }
 
-const OPPONENTS = [
-  "Harbor Hawks",
-  "Iron City Bulls",
-  "Northside Wolves",
-  "Desert Suns",
-  "Bay Sharks",
-  "Capital Kings",
-  "Lakeview Eagles",
-  "Summit Lions",
-];
-
 const TWO_POINT_PLAYS = [
   "Hits a mid-range jumper",
   "Finishes at the rim",
@@ -58,7 +48,8 @@ function simulateQuarter(
   minutes: number,
   r: Ratings,
   fatigue: number,
-  teamAvg: number
+  teamAvg: number,
+  level: Level
 ): QuarterResult {
   // Players get more tired in later quarters, low stamina makes it worse
   const tired = ((100 - r.stamina) / 100) * 0.05 * (quarter - 1);
@@ -68,9 +59,13 @@ function simulateQuarter(
   let points = 0;
   const plays: string[] = [];
 
-  // Field goals: better shooters also take more shots
+  // Field goals: better shooters also take more shots.
+  // Scoring is easier in high school and harder in the pros.
   const attempts = around(minutes * (0.34 + r.shooting * 0.0035), 1.5);
-  const fgChance = Math.min(0.65, (0.28 + r.shooting * 0.004) * form);
+  const fgChance = Math.min(
+    0.65,
+    (0.28 + r.shooting * 0.004 + level.shootingMod) * form
+  );
   for (let i = 0; i < attempts; i++) {
     const isThree = Math.random() < 0.3;
     const chance = isThree ? fgChance - 0.1 : fgChance;
@@ -103,7 +98,10 @@ function simulateQuarter(
   // Rebounds and assists help the team win, defense holds the opponent down
   const impact = rebounds * 0.2 + assists * 0.3;
   const teammates = around(17 + (teamAvg - 45) * 0.08, 4);
-  const opponentScore = around(22 - (r.defense - 45) * 0.07, 4);
+  const opponentScore = around(
+    level.opponentScore - (r.defense - 45) * 0.07,
+    4
+  );
 
   return {
     quarter,
@@ -117,7 +115,11 @@ function simulateQuarter(
   };
 }
 
-export function simulateGame(player: Player, energy: number): GameResult {
+export function simulateGame(
+  player: Player,
+  energy: number,
+  level: Level
+): GameResult {
   const r = player.ratings;
 
   // Tired players perform worse
@@ -137,7 +139,7 @@ export function simulateGame(player: Player, energy: number): GameResult {
   const quarters: QuarterResult[] = [];
   for (let q = 1; q <= 4; q++) {
     const minutes = base + (q <= extra ? 1 : 0);
-    quarters.push(simulateQuarter(q, minutes, r, fatigue, teamAvg));
+    quarters.push(simulateQuarter(q, minutes, r, fatigue, teamAvg, level));
   }
 
   let teamScore = quarters.reduce((s, q) => s + q.teamScore, 0);
@@ -156,7 +158,7 @@ export function simulateGame(player: Player, energy: number): GameResult {
   }
 
   return {
-    opponent: pick(OPPONENTS),
+    opponent: pick(level.opponents),
     teamScore,
     opponentScore,
     won: teamScore > opponentScore,

@@ -15,6 +15,7 @@ export default function HomeScreen() {
     player,
     week,
     season,
+    level,
     energy,
     message,
     lastGame,
@@ -37,7 +38,7 @@ export default function HomeScreen() {
     return (
       <View>
         <Text style={styles.name}>{player.name}</Text>
-        <Text style={styles.sub}>Game day</Text>
+        <Text style={styles.sub}>Game day · {level.name}</Text>
         <LiveGame />
       </View>
     );
@@ -49,7 +50,8 @@ export default function HomeScreen() {
       <View>
         <Text style={styles.name}>{player.name}</Text>
         <Text style={styles.sub}>
-          Season {season} · Week {week}/{SEASON_WEEKS} · Energy {energy}
+          {level.name} · Season {season} · Week {week}/{SEASON_WEEKS} · Energy{" "}
+          {energy}
         </Text>
         <EventCard />
       </View>
@@ -64,7 +66,10 @@ export default function HomeScreen() {
       </Text>
 
       <Text style={styles.weekText}>
-        Season {season} · Week {week}/{SEASON_WEEKS}
+        {level.name} · Season {season}
+      </Text>
+      <Text style={styles.hint}>
+        Week {week}/{SEASON_WEEKS}
       </Text>
       <Text style={gameWeek ? styles.gameDay : styles.trainDay}>
         {gameWeek ? "Game day!" : "Training week"}
