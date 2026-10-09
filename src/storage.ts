@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Player } from "./game/player";
 import { GameResult } from "./game/simulation";
 import { SeasonStats, SeasonSummary } from "./game/season";
+import { Injury } from "./game/injuries";
 
 const KEY = "hooprise_save_v1";
 
@@ -15,6 +16,7 @@ export interface SaveData {
   seasonStats?: SeasonStats;
   seasonSummary?: SeasonSummary | null;
   eventId?: string | null;
+  injury?: Injury | null;
 }
 
 export async function saveGame(data: SaveData): Promise<void> {

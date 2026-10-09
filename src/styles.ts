@@ -73,4 +73,14 @@ export const styles = StyleSheet.create({
   },
   choiceLabel: { color: "#fff", fontSize: 17, fontWeight: "bold" },
   choiceEffect: { color: "#3ddc84", fontSize: 13, marginTop: 4 },
+    injuryCard: {
+    backgroundColor: "#2a1414", borderRadius: 12, padding: 14,
+    borderWidth: 1, borderColor: "#c0392b", marginTop: 12,
+  },
+  injuryTitle: { color: "#ff6b5b", fontSize: 13, fontWeight: "bold", letterSpacing: 1 },
+  injuryText: { color: "#ccc", fontSize: 14, marginTop: 4 },
+  hurtButton: {
+    backgroundColor: "#8e2b22", padding: 16, borderRadius: 10,
+    alignItems: "center", marginTop: 12,
+  },
 });

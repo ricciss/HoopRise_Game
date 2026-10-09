@@ -31,6 +31,14 @@ import {
   applyEffect,
   describeEffect,
 } from "../game/events";
+import {
+  Injury,
+  rollInjury,
+  tickInjury,
+  worsenInjury,
+  describeInjury,
+  WORSEN_CHANCE,
+} from "../game/injuries";
 import { saveGame, loadGame, clearGame } from "../storage";
 
 export const LABELS: Record<keyof Ratings, string> = {
@@ -70,6 +78,9 @@ interface GameState {
   closeGame: () => void;
   event: GameEvent | null;
   chooseEvent: (index: number) => void;
+  injury: Injury | null;
+  sitOut: () => void;
+  playHurt: () => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -94,6 +105,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   );
   const [liveGame, setLiveGame] = useState<LiveGameState | null>(null);
   const [event, setEvent] = useState<GameEvent | null>(null);
+  const [injury, setInjury] = useState<Injury | null>(null);
 
   // Load saved game on startup
   useEffect(() => {
@@ -107,6 +119,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setSeasonStats(data.seasonStats ?? emptyStats());
         setSeasonSummary(data.seasonSummary ?? null);
         setEvent(data.eventId ? findEvent(data.eventId) : null);
+        setInjury(data.injury ?? null);
       }
       setLoaded(true);
     });
@@ -125,6 +138,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         seasonStats,
         seasonSummary,
         eventId: event ? event.id : null,
+        injury,
       });
     } else {
       clearGame();
@@ -139,6 +153,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     seasonStats,
     seasonSummary,
     event,
+    injury,
   ]);
 
   // Moves to the next week, or ends the season after the last week
@@ -169,10 +184,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setSeasonSummary(null);
     setLiveGame(null);
     setEvent(null);
+    setInjury(null);
   }
 
   function trainStat(stat: keyof Ratings) {
     if (!player || isGameWeek(week) || event) return;
+    if (injury) {
+      setMessage("You are injured. Rest to recover.");
+      return;
+    }
     if (energy < TRAIN_COST) {
       setMessage("Not enough energy. Rest first.");
       return;
@@ -187,17 +207,72 @@ export function GameProvider({ children }: { children: ReactNode }) {
   function restWeek() {
     if (isGameWeek(week) || event) return;
     setEnergy(rest(energy));
-    setMessage(`You rested. +${REST_GAIN} energy`);
+    if (injury) {
+      const healed = tickInjury(injury, 2);
+      setInjury(healed);
+      setMessage(
+        healed
+          ? `You rested and your injury is healing. +${REST_GAIN} energy`
+          : `You are healthy again! +${REST_GAIN} energy`
+      );
+    } else {
+      setMessage(`You rested. +${REST_GAIN} energy`);
+    }
     advance(seasonStats);
   }
 
   function playGame() {
-    if (!player || !isGameWeek(week)) return;
+    if (!player || !isGameWeek(week) || injury) return;
     const result = simulateGame(player, energy);
     setLastGame(result);
     setLiveGame({ game: result, shown: 0 });
+
+    let text = result.won ? "Victory!" : "Tough loss.";
+    const hurt = rollInjury(energy);
+    if (hurt) {
+      setInjury(hurt);
+      text += ` Injury: ${describeInjury(hurt)}`;
+    }
+
     setEnergy(Math.max(0, energy - GAME_COST));
-    setMessage(result.won ? "Victory!" : "Tough loss.");
+    setMessage(text);
+    advance(addGame(seasonStats, result));
+  }
+
+  // Game week while injured: skip the game and recover faster
+  function sitOut() {
+    if (!player || !isGameWeek(week) || !injury) return;
+    const healed = tickInjury(injury, 2);
+    setInjury(healed);
+    setEnergy(Math.min(MAX_ENERGY, energy + 20));
+    setMessage(
+      healed
+        ? "You sat out the game and focused on recovery. +20 energy"
+        : "You sat out the game and you are healthy again! +20 energy"
+    );
+    advance(seasonStats);
+  }
+
+  // Game week while injured: play anyway, with a bad performance and a risk
+  function playHurt() {
+    if (!player || !isGameWeek(week) || !injury) return;
+    const result = simulateGame(player, Math.min(energy, 20));
+    setLastGame(result);
+    setLiveGame({ game: result, shown: 0 });
+    setEnergy(Math.max(0, energy - GAME_COST));
+
+    let text = result.won ? "Victory, even hurt!" : "Tough loss.";
+    if (Math.random() < WORSEN_CHANCE) {
+      const worse = worsenInjury(injury);
+      setInjury(worse);
+      text += ` You made the injury worse: ${describeInjury(worse)}`;
+    } else {
+      const healed = tickInjury(injury, 1);
+      setInjury(healed);
+      if (!healed) text += " You are healthy again!";
+    }
+
+    setMessage(text);
     advance(addGame(seasonStats, result));
   }
 
@@ -223,6 +298,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setLastGame(null);
     setLiveGame(null);
     setEvent(null);
+    setInjury(null);
     setMessage("A new season begins!");
   }
 
@@ -230,6 +306,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setPlayer(null);
     setLiveGame(null);
     setEvent(null);
+    setInjury(null);
   }
 
   function nextQuarter() {
@@ -267,6 +344,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     closeGame,
     event,
     chooseEvent,
+    injury,
+    sitOut,
+    playHurt,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

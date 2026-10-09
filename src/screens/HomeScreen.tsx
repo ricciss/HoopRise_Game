@@ -3,6 +3,7 @@ import { Ratings } from "../game/player";
 import { TRAIN_COST } from "../game/training";
 import { GAME_COST } from "../game/simulation";
 import { SEASON_WEEKS } from "../game/season";
+import { WORSEN_CHANCE, describeInjury } from "../game/injuries";
 import { useGame, LABELS } from "../store/GameContext";
 import GameCard from "../components/GameCard";
 import LiveGame from "../components/LiveGame";
@@ -19,10 +20,13 @@ export default function HomeScreen() {
     lastGame,
     liveGame,
     event,
+    injury,
     gameWeek,
     trainStat,
     restWeek,
     playGame,
+    sitOut,
+    playHurt,
     newCareer,
   } = useGame();
 
@@ -80,6 +84,16 @@ export default function HomeScreen() {
         <Text style={styles.ratingValue}>{energy}</Text>
       </View>
 
+      {injury && (
+        <View style={styles.injuryCard}>
+          <Text style={styles.injuryTitle}>INJURED</Text>
+          <Text style={styles.injuryText}>{describeInjury(injury)}</Text>
+          <Text style={styles.injuryText}>
+            Training is blocked. Resting heals twice as fast as playing hurt.
+          </Text>
+        </View>
+      )}
+
       <Text style={styles.message}>{message || " "}</Text>
 
       {lastGame && <GameCard game={lastGame} />}
@@ -93,7 +107,7 @@ export default function HomeScreen() {
             />
           </View>
           <Text style={styles.ratingValue}>{player.ratings[key]}</Text>
-          {!gameWeek && (
+          {!gameWeek && !injury && (
             <Pressable
               style={[
                 styles.trainButton,
@@ -112,13 +126,28 @@ export default function HomeScreen() {
         played every second week.
       </Text>
 
-      {gameWeek ? (
+      {gameWeek && injury ? (
+        <View>
+          <Pressable style={styles.restButton} onPress={sitOut}>
+            <Text style={styles.buttonText}>Sit out (heal faster)</Text>
+          </Pressable>
+          <Pressable style={styles.hurtButton} onPress={playHurt}>
+            <Text style={styles.buttonText}>Play hurt</Text>
+          </Pressable>
+          <Text style={styles.hint}>
+            Playing hurt: weak performance and a{" "}
+            {Math.round(WORSEN_CHANCE * 100)}% risk of making the injury worse.
+          </Text>
+        </View>
+      ) : gameWeek ? (
         <Pressable style={styles.gameButton} onPress={playGame}>
           <Text style={styles.buttonText}>Play game</Text>
         </Pressable>
       ) : (
         <Pressable style={styles.restButton} onPress={restWeek}>
-          <Text style={styles.buttonText}>Rest</Text>
+          <Text style={styles.buttonText}>
+            {injury ? "Rest (heal injury)" : "Rest"}
+          </Text>
         </Pressable>
       )}
 
