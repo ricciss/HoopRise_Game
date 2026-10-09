@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   REST_GAIN,
 } from "./src/game/training";
 import { simulateGame, GameResult, GAME_COST } from "./src/game/simulation";
+import { saveGame, loadGame, clearGame } from "./src/storage";
 import { styles } from "./src/styles";
 
 const POSITIONS: Position[] = ["PG", "SG", "SF", "PF", "C"];
@@ -30,6 +31,7 @@ const LABELS: Record<keyof Ratings, string> = {
 };
 
 export default function App() {
+  const [loaded, setLoaded] = useState(false);
   const [name, setName] = useState("");
   const [position, setPosition] = useState<Position>("PG");
   const [player, setPlayer] = useState<Player | null>(null);
@@ -37,6 +39,29 @@ export default function App() {
   const [energy, setEnergy] = useState(MAX_ENERGY);
   const [message, setMessage] = useState("");
   const [lastGame, setLastGame] = useState<GameResult | null>(null);
+
+  // Load saved game on startup
+  useEffect(() => {
+    loadGame().then((data) => {
+      if (data) {
+        setPlayer(data.player);
+        setWeek(data.week);
+        setEnergy(data.energy);
+        setLastGame(data.lastGame);
+      }
+      setLoaded(true);
+    });
+  }, []);
+
+  // Save after every change (only after the initial load is finished)
+  useEffect(() => {
+    if (!loaded) return;
+    if (player) {
+      saveGame({ player, week, energy, lastGame });
+    } else {
+      clearGame();
+    }
+  }, [loaded, player, week, energy, lastGame]);
 
   function handleCreate() {
     if (name.trim().length === 0) return;
@@ -73,6 +98,14 @@ export default function App() {
     setEnergy(Math.max(0, energy - GAME_COST));
     setWeek(week + 1);
     setMessage(result.won ? "Victory!" : "Tough loss.");
+  }
+
+  if (!loaded) {
+    return (
+      <View style={styles.container}>
+        <StatusBar style="light" />
+      </View>
+    );
   }
 
   return (
@@ -199,7 +232,7 @@ export default function App() {
           </Pressable>
 
           <Pressable style={styles.button} onPress={() => setPlayer(null)}>
-            <Text style={styles.buttonText}>Create another</Text>
+            <Text style={styles.buttonText}>New career (deletes save)</Text>
           </Pressable>
         </View>
       )}
