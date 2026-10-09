@@ -4,6 +4,8 @@ import { TRAIN_COST } from "../game/training";
 import { GAME_COST } from "../game/simulation";
 import { SEASON_WEEKS } from "../game/season";
 import { useGame, LABELS } from "../store/GameContext";
+import GameCard from "../components/GameCard";
+import LiveGame from "../components/LiveGame";
 import { styles } from "../styles";
 
 export default function HomeScreen() {
@@ -14,6 +16,7 @@ export default function HomeScreen() {
     energy,
     message,
     lastGame,
+    liveGame,
     gameWeek,
     trainStat,
     restWeek,
@@ -22,6 +25,17 @@ export default function HomeScreen() {
   } = useGame();
 
   if (!player) return null;
+
+  // While a game is being played, show only the live view
+  if (liveGame) {
+    return (
+      <View>
+        <Text style={styles.name}>{player.name}</Text>
+        <Text style={styles.sub}>Game day</Text>
+        <LiveGame />
+      </View>
+    );
+  }
 
   return (
     <View>
@@ -53,34 +67,7 @@ export default function HomeScreen() {
 
       <Text style={styles.message}>{message || " "}</Text>
 
-      {lastGame && (
-        <View style={styles.gameCard}>
-          <Text style={styles.gameTitle}>
-            {lastGame.won ? "WIN" : "LOSS"} vs {lastGame.opponent}
-          </Text>
-          <Text style={styles.gameScore}>
-            {lastGame.teamScore} - {lastGame.opponentScore}
-          </Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statValue}>{lastGame.points}</Text>
-              <Text style={styles.statLabel}>PTS</Text>
-            </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statValue}>{lastGame.rebounds}</Text>
-              <Text style={styles.statLabel}>REB</Text>
-            </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statValue}>{lastGame.assists}</Text>
-              <Text style={styles.statLabel}>AST</Text>
-            </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statValue}>{lastGame.minutes}</Text>
-              <Text style={styles.statLabel}>MIN</Text>
-            </View>
-          </View>
-        </View>
-      )}
+      {lastGame && <GameCard game={lastGame} />}
 
       {(Object.keys(player.ratings) as (keyof Ratings)[]).map((key) => (
         <View key={key} style={styles.ratingRow}>

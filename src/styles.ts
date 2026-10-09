@@ -56,4 +56,11 @@ export const styles = StyleSheet.create({
   statLabel: { color: "#888", fontSize: 12, marginTop: 2 },
     gameDay: { color: "#1f6feb", fontSize: 16, fontWeight: "bold", marginBottom: 12 },
   trainDay: { color: "#3ddc84", fontSize: 16, fontWeight: "bold", marginBottom: 12 },
+    tableRow: { flexDirection: "row", alignItems: "center", paddingVertical: 5 },
+  tableName: { color: "#ccc", fontSize: 14, width: 44 },
+  tableHead: { color: "#888", fontSize: 12, flex: 1, textAlign: "center" },
+  tableCell: { color: "#fff", fontSize: 16, fontWeight: "bold", flex: 1, textAlign: "center" },
+  divider: { height: 1, backgroundColor: "#333", marginVertical: 12 },
+  quarterTitle: { color: "#ff8c00", fontSize: 14, fontWeight: "bold", marginTop: 12 },
+  highlightText: { color: "#aaa", fontSize: 13, marginTop: 3 },
 });

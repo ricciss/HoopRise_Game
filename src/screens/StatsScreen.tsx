@@ -1,10 +1,11 @@
 import { View, Text } from "react-native";
 import { summarize } from "../game/season";
 import { useGame } from "../store/GameContext";
+import GameCard from "../components/GameCard";
 import { styles } from "../styles";
 
 export default function StatsScreen() {
-  const { player, season, seasonStats, lastGame } = useGame();
+  const { player, season, seasonStats, lastGame, liveGame } = useGame();
   if (!player) return null;
 
   const s = summarize(season, player.age, seasonStats);
@@ -39,33 +40,8 @@ export default function StatsScreen() {
         </View>
       </View>
 
-      {lastGame ? (
-        <View style={styles.gameCard}>
-          <Text style={styles.gameTitle}>
-            LAST GAME: {lastGame.won ? "WIN" : "LOSS"} vs {lastGame.opponent}
-          </Text>
-          <Text style={styles.gameScore}>
-            {lastGame.teamScore} - {lastGame.opponentScore}
-          </Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statValue}>{lastGame.points}</Text>
-              <Text style={styles.statLabel}>PTS</Text>
-            </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statValue}>{lastGame.rebounds}</Text>
-              <Text style={styles.statLabel}>REB</Text>
-            </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statValue}>{lastGame.assists}</Text>
-              <Text style={styles.statLabel}>AST</Text>
-            </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statValue}>{lastGame.minutes}</Text>
-              <Text style={styles.statLabel}>MIN</Text>
-            </View>
-          </View>
-        </View>
+      {lastGame && !liveGame ? (
+        <GameCard game={lastGame} />
       ) : (
         <Text style={styles.hint}>No games played yet this season.</Text>
       )}

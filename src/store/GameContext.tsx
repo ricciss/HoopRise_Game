@@ -35,6 +35,11 @@ export const LABELS: Record<keyof Ratings, string> = {
   stamina: "Stamina",
 };
 
+export interface LiveGameState {
+  game: GameResult;
+  shown: number; // how many quarters are revealed
+}
+
 interface GameState {
   loaded: boolean;
   player: Player | null;
@@ -43,8 +48,8 @@ interface GameState {
   energy: number;
   message: string;
   lastGame: GameResult | null;
+  seasonStats: SeasonStats;
   seasonSummary: SeasonSummary | null;
-   seasonStats: SeasonStats;
   gameWeek: boolean;
   createCareer: (name: string, position: Position) => void;
   trainStat: (stat: keyof Ratings) => void;
@@ -52,6 +57,10 @@ interface GameState {
   playGame: () => void;
   nextSeason: () => void;
   newCareer: () => void;
+  liveGame: LiveGameState | null;
+  nextQuarter: () => void;
+  skipGame: () => void;
+  closeGame: () => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -74,6 +83,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [seasonSummary, setSeasonSummary] = useState<SeasonSummary | null>(
     null
   );
+  const [liveGame, setLiveGame] = useState<LiveGameState | null>(null);
 
   // Load saved game on startup
   useEffect(() => {
@@ -130,6 +140,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setLastGame(null);
     setSeasonStats(emptyStats());
     setSeasonSummary(null);
+    setLiveGame(null);
   }
 
   function trainStat(stat: keyof Ratings) {
@@ -156,6 +167,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (!player || !isGameWeek(week)) return;
     const result = simulateGame(player, energy);
     setLastGame(result);
+    setLiveGame({ game: result, shown: 0 });
     setEnergy(Math.max(0, energy - GAME_COST));
     setMessage(result.won ? "Victory!" : "Tough loss.");
     advance(addGame(seasonStats, result));
@@ -170,11 +182,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setSeasonStats(emptyStats());
     setSeasonSummary(null);
     setLastGame(null);
+    setLiveGame(null);
     setMessage("A new season begins!");
   }
 
   function newCareer() {
     setPlayer(null);
+    setLiveGame(null);
+  }
+
+  function nextQuarter() {
+    setLiveGame((l) => (l ? { ...l, shown: l.shown + 1 } : l));
+  }
+
+  function skipGame() {
+    setLiveGame((l) => (l ? { ...l, shown: 4 } : l));
+  }
+
+  function closeGame() {
+    setLiveGame(null);
   }
 
   const value: GameState = {
@@ -185,8 +211,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     energy,
     message,
     lastGame,
-    seasonSummary,
     seasonStats,
+    seasonSummary,
     gameWeek: isGameWeek(week),
     createCareer,
     trainStat,
@@ -194,6 +220,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     playGame,
     nextSeason,
     newCareer,
+    liveGame,
+    nextQuarter,
+    skipGame,
+    closeGame,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

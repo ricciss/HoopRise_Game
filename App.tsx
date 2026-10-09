@@ -43,7 +43,7 @@ function StatsTab() {
 }
 
 function Main() {
-  const { loaded, player, seasonSummary } = useGame();
+  const { loaded, player, seasonSummary, liveGame } = useGame();
 
   if (!loaded) {
     return (
@@ -61,7 +61,7 @@ function Main() {
     );
   }
 
-  if (seasonSummary) {
+  if (seasonSummary && !liveGame) {
     return (
       <Screen>
         <SeasonSummaryScreen />
