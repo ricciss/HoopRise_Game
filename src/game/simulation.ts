@@ -1,5 +1,6 @@
 import { Player, Ratings } from "./player";
 import { Level } from "./levels";
+import { College } from "./colleges";
 
 export const GAME_COST = 20;
 
@@ -49,7 +50,8 @@ function simulateQuarter(
   r: Ratings,
   fatigue: number,
   teamAvg: number,
-  level: Level
+  level: Level,
+  teamMod: number
 ): QuarterResult {
   // Players get more tired in later quarters, low stamina makes it worse
   const tired = ((100 - r.stamina) / 100) * 0.05 * (quarter - 1);
@@ -97,7 +99,7 @@ function simulateQuarter(
 
   // Rebounds and assists help the team win, defense holds the opponent down
   const impact = rebounds * 0.2 + assists * 0.3;
-  const teammates = around(17 + (teamAvg - 45) * 0.08, 4);
+  const teammates = around(17 + teamMod + (teamAvg - 45) * 0.08, 4);
   const opponentScore = around(
     level.opponentScore - (r.defense - 45) * 0.07,
     4
@@ -115,19 +117,23 @@ function simulateQuarter(
   };
 }
 
+// college is only used while the player plays at college level
 export function simulateGame(
   player: Player,
   energy: number,
-  level: Level
+  level: Level,
+  college: College | null = null
 ): GameResult {
   const r = player.ratings;
+  const teamMod = college ? college.teamMod : 0;
+  const minutesMod = college ? college.minutesMod : 1;
 
   // Tired players perform worse
   const fatigue = energy >= 50 ? 1 : energy >= 25 ? 0.92 : 0.82;
 
   const totalMinutes = Math.min(
     36,
-    Math.round((20 + r.stamina * 0.25) * fatigue)
+    Math.round((20 + r.stamina * 0.25) * fatigue * minutesMod)
   );
   const base = Math.floor(totalMinutes / 4);
   const extra = totalMinutes % 4;
@@ -139,7 +145,9 @@ export function simulateGame(
   const quarters: QuarterResult[] = [];
   for (let q = 1; q <= 4; q++) {
     const minutes = base + (q <= extra ? 1 : 0);
-    quarters.push(simulateQuarter(q, minutes, r, fatigue, teamAvg, level));
+    quarters.push(
+      simulateQuarter(q, minutes, r, fatigue, teamAvg, level, teamMod)
+    );
   }
 
   let teamScore = quarters.reduce((s, q) => s + q.teamScore, 0);

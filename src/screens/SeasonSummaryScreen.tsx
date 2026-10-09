@@ -4,11 +4,12 @@ import { useGame } from "../store/GameContext";
 import { styles } from "../styles";
 
 export default function SeasonSummaryScreen() {
-  const { player, seasonSummary, level, nextSeason } = useGame();
+  const { player, seasonSummary, level, nextSeason, openOffers } = useGame();
   if (!player || !seasonSummary) return null;
 
   const upcoming = levelForSeason(seasonSummary.season + 1);
   const movingUp = upcoming.id !== level.id;
+  const toCollege = movingUp && upcoming.id === "college";
 
   return (
     <View>
@@ -53,13 +54,19 @@ export default function SeasonSummaryScreen() {
         </View>
       )}
 
-      <Pressable style={styles.gameButton} onPress={nextSeason}>
-        <Text style={styles.buttonText}>
-          {movingUp
-            ? `Move up to ${upcoming.name}`
-            : `Start season ${seasonSummary.season + 1}`}
-        </Text>
-      </Pressable>
+      {toCollege ? (
+        <Pressable style={styles.gameButton} onPress={openOffers}>
+          <Text style={styles.buttonText}>See college offers</Text>
+        </Pressable>
+      ) : (
+        <Pressable style={styles.gameButton} onPress={nextSeason}>
+          <Text style={styles.buttonText}>
+            {movingUp
+              ? `Move up to ${upcoming.name}`
+              : `Start season ${seasonSummary.season + 1}`}
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 }

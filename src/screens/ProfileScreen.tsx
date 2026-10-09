@@ -1,10 +1,11 @@
 import { View, Text } from "react-native";
 import { Ratings } from "../game/player";
+import { perkLines } from "../game/colleges";
 import { useGame, LABELS } from "../store/GameContext";
 import { styles } from "../styles";
 
 export default function ProfileScreen() {
-  const { player } = useGame();
+  const { player, college, level } = useGame();
   if (!player) return null;
 
   const keys = Object.keys(player.ratings) as (keyof Ratings)[];
@@ -23,6 +24,20 @@ export default function ProfileScreen() {
         <Text style={styles.gameTitle}>OVERALL</Text>
         <Text style={styles.gameScore}>{overall}</Text>
       </View>
+
+      {college && (
+        <View style={styles.gameCard}>
+          <Text style={styles.gameTitle}>
+            {level.id === "college" ? "COLLEGE" : "FORMER COLLEGE"}
+          </Text>
+          <Text style={styles.eventTitle}>{college.name}</Text>
+          {perkLines(college).map((line) => (
+            <Text key={line} style={styles.highlightText}>
+              • {line}
+            </Text>
+          ))}
+        </View>
+      )}
 
       {keys.map((key) => (
         <View key={key} style={styles.ratingRow}>

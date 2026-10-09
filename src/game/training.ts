@@ -10,10 +10,12 @@ export interface TrainResult {
   gain: number;
 }
 
+// devChance: chance of +1 extra point (good coaching at college)
 export function train(
   player: Player,
   stat: keyof Ratings,
-  energy: number
+  energy: number,
+  devChance: number = 0
 ): TrainResult {
   if (energy < TRAIN_COST) {
     return { player, energy, gain: 0 };
@@ -31,7 +33,8 @@ export function train(
   // Players up to 24 always gain at least 2 (until the rating reaches 85)
   const minGain = current < 85 && player.age <= 24 ? 2 : 1;
   const roll = minGain + Math.floor(Math.random() * (maxGain - minGain + 1));
-  const gain = Math.min(99 - current, Math.max(1, roll));
+  const extra = Math.random() < devChance ? 1 : 0;
+  const gain = Math.min(99 - current, Math.max(1, roll) + extra);
 
   return {
     player: {

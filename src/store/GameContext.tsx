@@ -40,6 +40,7 @@ import {
   WORSEN_CHANCE,
 } from "../game/injuries";
 import { Level, levelForSeason } from "../game/levels";
+import { College, findCollege, generateOffers } from "../game/colleges";
 import { saveGame, loadGame, clearGame } from "../storage";
 
 export const LABELS: Record<keyof Ratings, string> = {
@@ -83,6 +84,10 @@ interface GameState {
   injury: Injury | null;
   sitOut: () => void;
   playHurt: () => void;
+  college: College | null;
+  offers: College[] | null;
+  openOffers: () => void;
+  chooseCollege: (id: string) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -108,9 +113,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [liveGame, setLiveGame] = useState<LiveGameState | null>(null);
   const [event, setEvent] = useState<GameEvent | null>(null);
   const [injury, setInjury] = useState<Injury | null>(null);
+  const [college, setCollege] = useState<College | null>(null);
+  const [offers, setOffers] = useState<College[] | null>(null);
 
   // The level (high school, college, pro) depends on the season number
   const level = levelForSeason(season);
+  // College perks only apply while playing at college level
+  const activeCollege = level.id === "college" ? college : null;
 
   // Load saved game on startup
   useEffect(() => {
@@ -125,6 +134,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setSeasonSummary(data.seasonSummary ?? null);
         setEvent(data.eventId ? findEvent(data.eventId) : null);
         setInjury(data.injury ?? null);
+        setCollege(data.collegeId ? findCollege(data.collegeId) : null);
+        const savedOffers = (data.offerIds ?? [])
+          .map(findCollege)
+          .filter((c): c is College => c !== null);
+        setOffers(savedOffers.length > 0 ? savedOffers : null);
       }
       setLoaded(true);
     });
@@ -144,6 +158,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         seasonSummary,
         eventId: event ? event.id : null,
         injury,
+        collegeId: college ? college.id : null,
+        offerIds: offers ? offers.map((c) => c.id) : null,
       });
     } else {
       clearGame();
@@ -159,6 +175,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     seasonSummary,
     event,
     injury,
+    college,
+    offers,
   ]);
 
   // Moves to the next week, or ends the season after the last week
@@ -190,6 +208,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setLiveGame(null);
     setEvent(null);
     setInjury(null);
+    setCollege(null);
+    setOffers(null);
   }
 
   function trainStat(stat: keyof Ratings) {
@@ -202,7 +222,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setMessage("Not enough energy. Rest first.");
       return;
     }
-    const result = train(player, stat, energy);
+    const result = train(
+      player,
+      stat,
+      energy,
+      activeCollege ? activeCollege.development : 0
+    );
     setPlayer(result.player);
     setEnergy(result.energy);
     setMessage(`${LABELS[stat]} +${result.gain}`);
@@ -228,7 +253,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   function playGame() {
     if (!player || !isGameWeek(week) || injury) return;
-    const result = simulateGame(player, energy, level);
+    const result = simulateGame(player, energy, level, activeCollege);
     setLastGame(result);
     setLiveGame({ game: result, shown: 0 });
 
@@ -261,7 +286,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
   // Game week while injured: play anyway, with a bad performance and a risk
   function playHurt() {
     if (!player || !isGameWeek(week) || !injury) return;
-    const result = simulateGame(player, Math.min(energy, 20), level);
+    const result = simulateGame(
+      player,
+      Math.min(energy, 20),
+      level,
+      activeCollege
+    );
     setLastGame(result);
     setLiveGame({ game: result, shown: 0 });
     setEnergy(Math.max(0, energy - GAME_COST));
@@ -312,11 +342,29 @@ export function GameProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  // Shows the college offers after the last high school season
+  function openOffers() {
+    if (!player) return;
+    setOffers(generateOffers(player));
+  }
+
+  function chooseCollege(id: string) {
+    if (!offers) return;
+    const chosen = offers.find((c) => c.id === id);
+    if (!chosen) return;
+    setCollege(chosen);
+    setOffers(null);
+    nextSeason();
+    setMessage(`You signed with ${chosen.name}. Welcome to College!`);
+  }
+
   function newCareer() {
     setPlayer(null);
     setLiveGame(null);
     setEvent(null);
     setInjury(null);
+    setCollege(null);
+    setOffers(null);
   }
 
   function nextQuarter() {
@@ -358,6 +406,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     injury,
     sitOut,
     playHurt,
+    college,
+    offers,
+    openOffers,
+    chooseCollege,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

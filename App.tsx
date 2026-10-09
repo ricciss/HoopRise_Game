@@ -6,6 +6,7 @@ import { GameProvider, useGame } from "./src/store/GameContext";
 import Screen from "./src/components/Screen";
 import CreatePlayerScreen from "./src/screens/CreatePlayerScreen";
 import SeasonSummaryScreen from "./src/screens/SeasonSummaryScreen";
+import CollegeOffersScreen from "./src/screens/CollegeOffersScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import StatsScreen from "./src/screens/StatsScreen";
@@ -43,7 +44,7 @@ function StatsTab() {
 }
 
 function Main() {
-  const { loaded, player, seasonSummary, liveGame } = useGame();
+  const { loaded, player, seasonSummary, liveGame, offers } = useGame();
 
   if (!loaded) {
     return (
@@ -57,6 +58,14 @@ function Main() {
     return (
       <Screen>
         <CreatePlayerScreen />
+      </Screen>
+    );
+  }
+
+  if (offers) {
+    return (
+      <Screen>
+        <CollegeOffersScreen />
       </Screen>
     );
   }

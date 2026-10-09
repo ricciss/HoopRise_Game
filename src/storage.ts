@@ -17,6 +17,8 @@ export interface SaveData {
   seasonSummary?: SeasonSummary | null;
   eventId?: string | null;
   injury?: Injury | null;
+  collegeId?: string | null;
+  offerIds?: string[] | null;
 }
 
 export async function saveGame(data: SaveData): Promise<void> {
