@@ -83,4 +83,6 @@ export const styles = StyleSheet.create({
     backgroundColor: "#8e2b22", padding: 16, borderRadius: 10,
     alignItems: "center", marginTop: 12,
   },
+    historyHead: { color: "#888", fontSize: 11, flex: 1, textAlign: "center" },
+  historyCell: { color: "#fff", fontSize: 13, fontWeight: "bold", flex: 1, textAlign: "center" },
 });

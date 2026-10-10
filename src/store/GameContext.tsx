@@ -41,7 +41,14 @@ import {
 } from "../game/injuries";
 import { Level, levelForSeason } from "../game/levels";
 import { College, findCollege, generateOffers } from "../game/colleges";
-import { saveGame, loadGame, clearGame } from "../storage";
+import {
+  SeasonRecord,
+  saveGame,
+  loadGame,
+  clearGame,
+  addSeasonRecord,
+  loadHistory,
+} from "../storage";
 
 export const LABELS: Record<keyof Ratings, string> = {
   shooting: "Shooting",
@@ -88,6 +95,7 @@ interface GameState {
   offers: College[] | null;
   openOffers: () => void;
   chooseCollege: (id: string) => void;
+  history: SeasonRecord[];
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -115,15 +123,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [injury, setInjury] = useState<Injury | null>(null);
   const [college, setCollege] = useState<College | null>(null);
   const [offers, setOffers] = useState<College[] | null>(null);
+  const [history, setHistory] = useState<SeasonRecord[]>([]);
 
   // The level (high school, college, pro) depends on the season number
   const level = levelForSeason(season);
   // College perks only apply while playing at college level
   const activeCollege = level.id === "college" ? college : null;
 
-  // Load saved game on startup
+  // Load saved game and season history on startup
   useEffect(() => {
-    loadGame().then((data) => {
+    Promise.all([loadGame(), loadHistory()]).then(([data, hist]) => {
       if (data) {
         setPlayer(data.player);
         setWeek(Math.min(data.week, SEASON_WEEKS));
@@ -139,6 +148,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           .map(findCollege)
           .filter((c): c is College => c !== null);
         setOffers(savedOffers.length > 0 ? savedOffers : null);
+        setHistory(hist);
       }
       setLoaded(true);
     });
@@ -179,12 +189,35 @@ export function GameProvider({ children }: { children: ReactNode }) {
     offers,
   ]);
 
-  // Moves to the next week, or ends the season after the last week
-  function advance(nextStats: SeasonStats) {
-    if (!player) return;
+  // Moves to the next week, or ends the season after the last week.
+  // "current" is the player after this week's action (e.g. after training).
+  function advance(nextStats: SeasonStats, current: Player | null = player) {
+    if (!current) return;
     setSeasonStats(nextStats);
     if (week >= SEASON_WEEKS) {
-      setSeasonSummary(summarize(season, player.age, nextStats));
+      const summary = summarize(season, current.age, nextStats);
+      setSeasonSummary(summary);
+
+      // Remember this season in the history table
+      const keys = Object.keys(current.ratings) as (keyof Ratings)[];
+      const overall = Math.round(
+        keys.reduce((sum, k) => sum + current.ratings[k], 0) / keys.length
+      );
+      const record: SeasonRecord = {
+        season,
+        age: current.age,
+        levelId: level.id,
+        college: activeCollege ? activeCollege.name : null,
+        games: summary.games,
+        wins: summary.wins,
+        losses: summary.losses,
+        ppg: summary.ppg,
+        rpg: summary.rpg,
+        apg: summary.apg,
+        overall,
+      };
+      setHistory((h) => [...h.filter((r) => r.season !== season), record]);
+      addSeasonRecord(record);
     } else {
       const nextWeek = week + 1;
       setWeek(nextWeek);
@@ -210,6 +243,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setInjury(null);
     setCollege(null);
     setOffers(null);
+    setHistory([]);
   }
 
   function trainStat(stat: keyof Ratings) {
@@ -231,7 +265,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setPlayer(result.player);
     setEnergy(result.energy);
     setMessage(`${LABELS[stat]} +${result.gain}`);
-    advance(seasonStats);
+    advance(seasonStats, result.player);
   }
 
   function restWeek() {
@@ -365,6 +399,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setInjury(null);
     setCollege(null);
     setOffers(null);
+    setHistory([]);
   }
 
   function nextQuarter() {
@@ -410,6 +445,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     offers,
     openOffers,
     chooseCollege,
+    history,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
