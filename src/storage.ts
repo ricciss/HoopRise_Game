@@ -4,6 +4,7 @@ import { GameResult } from "./game/simulation";
 import { SeasonStats, SeasonSummary } from "./game/season";
 import { Injury } from "./game/injuries";
 import { Team, DraftPickEntry, DraftResult } from "./game/league";
+import { Contract, ContractOffer } from "./game/market";
 
 export interface SaveData {
   player: Player;
@@ -21,6 +22,9 @@ export interface SaveData {
   teamId?: number | null;
   draftPick?: number | null;
   draft?: DraftResult | null; // draft result waiting to be confirmed
+  contract?: Contract | null;
+  earnings?: number;
+  contractOffers?: ContractOffer[] | null; // offers waiting for a decision
 }
 
 // One finished season (a row in the season_history table)
@@ -38,6 +42,14 @@ export interface SeasonRecord {
   overall: number;
 }
 
+// One signed contract (a row in the contracts table)
+export interface ContractRecord {
+  season: number; // first season of the contract
+  teamName: string;
+  salary: number;
+  years: number;
+}
+
 interface HistoryRow {
   season: number;
   age: number;
@@ -50,6 +62,13 @@ interface HistoryRow {
   rpg: number;
   apg: number;
   overall: number;
+}
+
+interface ContractRow {
+  season: number;
+  team_name: string;
+  salary: number;
+  years: number;
 }
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -92,6 +111,12 @@ function getDb(): Promise<SQLite.SQLiteDatabase> {
           college TEXT NOT NULL,
           is_user INTEGER NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS contracts (
+          season INTEGER PRIMARY KEY,
+          team_name TEXT NOT NULL,
+          salary REAL NOT NULL,
+          years INTEGER NOT NULL
+        );
       `);
       return db;
     })();
@@ -124,12 +149,12 @@ export async function loadGame(): Promise<SaveData | null> {
   }
 }
 
-// Deletes the whole career: save, season history, league and draft
+// Deletes the whole career: save, history, league, draft and contracts
 export async function clearGame(): Promise<void> {
   try {
     const db = await getDb();
     await db.execAsync(
-      "DELETE FROM save; DELETE FROM season_history; DELETE FROM teams; DELETE FROM draft_class;"
+      "DELETE FROM save; DELETE FROM season_history; DELETE FROM teams; DELETE FROM draft_class; DELETE FROM contracts;"
     );
   } catch (e) {
     console.warn("Could not clear save", e);
@@ -235,5 +260,39 @@ export async function saveDraftClass(board: DraftPickEntry[]): Promise<void> {
     }
   } catch (e) {
     console.warn("Could not save draft class", e);
+  }
+}
+
+export async function saveContractRecord(r: ContractRecord): Promise<void> {
+  try {
+    const db = await getDb();
+    await db.runAsync(
+      `INSERT OR REPLACE INTO contracts (season, team_name, salary, years)
+       VALUES (?, ?, ?, ?)`,
+      r.season,
+      r.teamName,
+      r.salary,
+      r.years
+    );
+  } catch (e) {
+    console.warn("Could not save contract", e);
+  }
+}
+
+export async function loadContractHistory(): Promise<ContractRecord[]> {
+  try {
+    const db = await getDb();
+    const rows = await db.getAllAsync<ContractRow>(
+      "SELECT season, team_name, salary, years FROM contracts ORDER BY season"
+    );
+    return rows.map((r) => ({
+      season: r.season,
+      teamName: r.team_name,
+      salary: r.salary,
+      years: r.years,
+    }));
+  } catch (e) {
+    console.warn("Could not load contracts", e);
+    return [];
   }
 }

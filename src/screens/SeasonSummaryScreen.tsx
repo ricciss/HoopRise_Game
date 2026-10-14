@@ -1,17 +1,28 @@
 import { View, Text, Pressable } from "react-native";
 import { levelForSeason } from "../game/levels";
+import { formatMoney } from "../game/market";
 import { useGame } from "../store/GameContext";
 import { styles } from "../styles";
 
 export default function SeasonSummaryScreen() {
-  const { player, seasonSummary, level, nextSeason, openOffers, openDraft } =
-    useGame();
+  const {
+    player,
+    seasonSummary,
+    level,
+    contract,
+    nextSeason,
+    openOffers,
+    openDraft,
+    openContractOffers,
+  } = useGame();
   if (!player || !seasonSummary) return null;
 
   const upcoming = levelForSeason(seasonSummary.season + 1);
   const movingUp = upcoming.id !== level.id;
   const toCollege = movingUp && upcoming.id === "college";
   const toPro = movingUp && upcoming.id === "pro";
+  const contractEnded =
+    level.id === "pro" && contract !== null && contract.yearsLeft === 0;
 
   return (
     <View>
@@ -47,6 +58,24 @@ export default function SeasonSummaryScreen() {
         </View>
       </View>
 
+      {level.id === "pro" && contract && (
+        <View style={{ marginBottom: 12 }}>
+          <Text style={styles.trainDay}>
+            Paid: {formatMoney(contract.salary)} this season
+          </Text>
+          {contractEnded ? (
+            <Text style={styles.gameDay}>
+              Your contract has expired. Teams are making offers.
+            </Text>
+          ) : (
+            <Text style={styles.hint}>
+              Contract: {contract.yearsLeft} season
+              {contract.yearsLeft === 1 ? "" : "s"} left
+            </Text>
+          )}
+        </View>
+      )}
+
       {movingUp && (
         <View>
           <Text style={styles.gameDay}>Next level: {upcoming.name}</Text>
@@ -65,6 +94,10 @@ export default function SeasonSummaryScreen() {
       ) : toPro ? (
         <Pressable style={styles.gameButton} onPress={openDraft}>
           <Text style={styles.buttonText}>Go to the draft</Text>
+        </Pressable>
+      ) : contractEnded ? (
+        <Pressable style={styles.gameButton} onPress={openContractOffers}>
+          <Text style={styles.buttonText}>See contract offers</Text>
         </Pressable>
       ) : (
         <Pressable style={styles.gameButton} onPress={nextSeason}>

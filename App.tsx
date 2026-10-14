@@ -8,6 +8,7 @@ import CreatePlayerScreen from "./src/screens/CreatePlayerScreen";
 import SeasonSummaryScreen from "./src/screens/SeasonSummaryScreen";
 import CollegeOffersScreen from "./src/screens/CollegeOffersScreen";
 import DraftScreen from "./src/screens/DraftScreen";
+import ContractOffersScreen from "./src/screens/ContractOffersScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import StatsScreen from "./src/screens/StatsScreen";
@@ -45,7 +46,15 @@ function StatsTab() {
 }
 
 function Main() {
-  const { loaded, player, seasonSummary, liveGame, offers, draft } = useGame();
+  const {
+    loaded,
+    player,
+    seasonSummary,
+    liveGame,
+    offers,
+    draft,
+    contractOffers,
+  } = useGame();
 
   if (!loaded) {
     return (
@@ -75,6 +84,14 @@ function Main() {
     return (
       <Screen>
         <DraftScreen />
+      </Screen>
+    );
+  }
+
+  if (contractOffers) {
+    return (
+      <Screen>
+        <ContractOffersScreen />
       </Screen>
     );
   }

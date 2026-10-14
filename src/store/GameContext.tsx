@@ -57,7 +57,17 @@ import {
   pickLabel,
 } from "../game/league";
 import {
+  Contract,
+  ContractOffer,
+  generateContractOffers,
+  rookieSalary,
+  rookieYears,
+  driftTeams,
+  formatMoney,
+} from "../game/market";
+import {
   SeasonRecord,
+  ContractRecord,
   saveGame,
   loadGame,
   clearGame,
@@ -66,6 +76,8 @@ import {
   saveTeams,
   loadTeams,
   saveDraftClass,
+  saveContractRecord,
+  loadContractHistory,
 } from "../storage";
 
 export const LABELS: Record<keyof Ratings, string> = {
@@ -120,6 +132,12 @@ interface GameState {
   draft: DraftResult | null;
   openDraft: () => void;
   finishDraft: () => void;
+  contract: Contract | null;
+  earnings: number;
+  contractOffers: ContractOffer[] | null;
+  contractHistory: ContractRecord[];
+  openContractOffers: () => void;
+  chooseContract: (index: number) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -149,14 +167,23 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [offers, setOffers] = useState<College[] | null>(null);
   const [history, setHistory] = useState<SeasonRecord[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [team, setTeam] = useState<Team | null>(null);
+  const [teamId, setTeamId] = useState<number | null>(null);
   const [draftPick, setDraftPick] = useState<number | null>(null);
   const [draft, setDraft] = useState<DraftResult | null>(null);
+  const [contract, setContract] = useState<Contract | null>(null);
+  const [earnings, setEarnings] = useState(0);
+  const [contractOffers, setContractOffers] = useState<
+    ContractOffer[] | null
+  >(null);
+  const [contractHistory, setContractHistory] = useState<ContractRecord[]>([]);
 
   // The level (high school, college, pro) depends on the season number
   const level = levelForSeason(season);
   // College perks only apply while playing at college level
   const activeCollege = level.id === "college" ? college : null;
+  // Your team is looked up from the league, so it follows team changes
+  const team =
+    teamId !== null ? teams.find((t) => t.id === teamId) ?? null : null;
 
   // What changes how your team performs right now
   const mods: Modifiers | null =
@@ -169,45 +196,48 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
       : null;
 
-  // Load saved game, season history and league on startup
+  // Load saved game, history, league and contracts on startup
   useEffect(() => {
-    Promise.all([loadGame(), loadHistory(), loadTeams()]).then(
-      async ([data, hist, savedTeams]) => {
-        if (data) {
-          // Old careers without a league get one now
-          let league = savedTeams;
-          if (league.length === 0) {
-            league = generateTeams();
-            await saveTeams(league);
-          }
-          setTeams(league);
-          setTeam(
-            data.teamId
-              ? league.find((t) => t.id === data.teamId) ?? null
-              : null
-          );
-          setDraftPick(data.draftPick ?? null);
-          setDraft(data.draft ?? null);
-
-          setPlayer(data.player);
-          setWeek(Math.min(data.week, SEASON_WEEKS));
-          setEnergy(data.energy);
-          setLastGame(data.lastGame);
-          setSeason(data.season ?? 1);
-          setSeasonStats(data.seasonStats ?? emptyStats());
-          setSeasonSummary(data.seasonSummary ?? null);
-          setEvent(data.eventId ? findEvent(data.eventId) : null);
-          setInjury(data.injury ?? null);
-          setCollege(data.collegeId ? findCollege(data.collegeId) : null);
-          const savedOffers = (data.offerIds ?? [])
-            .map(findCollege)
-            .filter((c): c is College => c !== null);
-          setOffers(savedOffers.length > 0 ? savedOffers : null);
-          setHistory(hist);
+    Promise.all([
+      loadGame(),
+      loadHistory(),
+      loadTeams(),
+      loadContractHistory(),
+    ]).then(async ([data, hist, savedTeams, contracts]) => {
+      if (data) {
+        // Old careers without a league get one now
+        let league = savedTeams;
+        if (league.length === 0) {
+          league = generateTeams();
+          await saveTeams(league);
         }
-        setLoaded(true);
+        setTeams(league);
+        setTeamId(data.teamId ?? null);
+        setDraftPick(data.draftPick ?? null);
+        setDraft(data.draft ?? null);
+        setContract(data.contract ?? null);
+        setEarnings(data.earnings ?? 0);
+        setContractOffers(data.contractOffers ?? null);
+        setContractHistory(contracts);
+
+        setPlayer(data.player);
+        setWeek(Math.min(data.week, SEASON_WEEKS));
+        setEnergy(data.energy);
+        setLastGame(data.lastGame);
+        setSeason(data.season ?? 1);
+        setSeasonStats(data.seasonStats ?? emptyStats());
+        setSeasonSummary(data.seasonSummary ?? null);
+        setEvent(data.eventId ? findEvent(data.eventId) : null);
+        setInjury(data.injury ?? null);
+        setCollege(data.collegeId ? findCollege(data.collegeId) : null);
+        const savedOffers = (data.offerIds ?? [])
+          .map(findCollege)
+          .filter((c): c is College => c !== null);
+        setOffers(savedOffers.length > 0 ? savedOffers : null);
+        setHistory(hist);
       }
-    );
+      setLoaded(true);
+    });
   }, []);
 
   // Save after every change (only after the initial load is finished)
@@ -226,9 +256,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
         injury,
         collegeId: college ? college.id : null,
         offerIds: offers ? offers.map((c) => c.id) : null,
-        teamId: team ? team.id : null,
+        teamId,
         draftPick,
         draft,
+        contract,
+        earnings,
+        contractOffers,
       });
     } else {
       clearGame();
@@ -246,9 +279,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     injury,
     college,
     offers,
-    team,
+    teamId,
     draftPick,
     draft,
+    contract,
+    earnings,
+    contractOffers,
   ]);
 
   // Moves to the next week, or ends the season after the last week.
@@ -259,6 +295,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (week >= SEASON_WEEKS) {
       const summary = summarize(season, current.age, nextStats);
       setSeasonSummary(summary);
+
+      // Pros get paid at the end of every season, and the contract shortens
+      if (level.id === "pro" && contract) {
+        setEarnings((e) => e + contract.salary);
+        setContract({
+          ...contract,
+          yearsLeft: Math.max(0, contract.yearsLeft - 1),
+        });
+      }
 
       // Remember this season in the history table
       const keys = Object.keys(current.ratings) as (keyof Ratings)[];
@@ -299,9 +344,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const league = generateTeams();
     setTeams(league);
     saveTeams(league);
-    setTeam(null);
+    setTeamId(null);
     setDraftPick(null);
     setDraft(null);
+    setContract(null);
+    setEarnings(0);
+    setContractOffers(null);
+    setContractHistory([]);
 
     setPlayer(createPlayer(name.trim(), position));
     setWeek(1);
@@ -437,6 +486,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setLiveGame(null);
     setEvent(null);
     setInjury(null);
+
+    // Teams get stronger or weaker over time
+    if (teams.length > 0) {
+      const drifted = driftTeams(teams);
+      setTeams(drifted);
+      saveTeams(drifted);
+    }
+
     setMessage(
       nextLevel.id !== level.id
         ? `Welcome to ${nextLevel.name}! The competition is tougher.`
@@ -476,16 +533,72 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   function finishDraft() {
     if (!draft) return;
-    const joined = teams.find((t) => t.id === draft.userTeamId) ?? null;
+    const salary = rookieSalary(draft.userPick);
+    const years = rookieYears(draft.userPick);
+    const record: ContractRecord = {
+      season: season + 1,
+      teamName: draft.userTeamName,
+      salary,
+      years,
+    };
     const text =
       draft.userPick !== null
         ? `Drafted: ${pickLabel(draft.userPick)} by ${draft.userTeamName}.`
         : `Undrafted, but ${draft.userTeamName} gave you a chance.`;
-    setTeam(joined);
+
+    setTeamId(draft.userTeamId);
     setDraftPick(draft.userPick);
+    setContract({
+      teamId: draft.userTeamId,
+      teamName: draft.userTeamName,
+      salary,
+      years,
+      yearsLeft: years,
+    });
+    setEarnings(0);
+    setContractHistory([record]);
+    saveContractRecord(record);
     setDraft(null);
     nextSeason();
-    setMessage(`${text} Welcome to the pros!`);
+    setMessage(
+      `${text} Rookie contract: ${formatMoney(salary)} for ${years} years.`
+    );
+  }
+
+  // Shows contract offers when your contract has run out
+  function openContractOffers() {
+    if (!player) return;
+    const ppg = seasonSummary ? seasonSummary.ppg : 15;
+    setContractOffers(generateContractOffers(player, ppg, teams, teamId));
+  }
+
+  function chooseContract(index: number) {
+    if (!contractOffers) return;
+    const offer = contractOffers[index];
+    if (!offer) return;
+    const record: ContractRecord = {
+      season: season + 1,
+      teamName: offer.teamName,
+      salary: offer.salary,
+      years: offer.years,
+    };
+    setTeamId(offer.teamId);
+    setContract({
+      teamId: offer.teamId,
+      teamName: offer.teamName,
+      salary: offer.salary,
+      years: offer.years,
+      yearsLeft: offer.years,
+    });
+    setContractHistory((h) => [...h, record]);
+    saveContractRecord(record);
+    setContractOffers(null);
+    nextSeason();
+    setMessage(
+      `Signed with ${offer.teamName}: ${formatMoney(
+        offer.salary
+      )} per season for ${offer.years} years.`
+    );
   }
 
   function newCareer() {
@@ -497,9 +610,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setOffers(null);
     setHistory([]);
     setTeams([]);
-    setTeam(null);
+    setTeamId(null);
     setDraftPick(null);
     setDraft(null);
+    setContract(null);
+    setEarnings(0);
+    setContractOffers(null);
+    setContractHistory([]);
   }
 
   function nextQuarter() {
@@ -552,6 +669,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     draft,
     openDraft,
     finishDraft,
+    contract,
+    earnings,
+    contractOffers,
+    contractHistory,
+    openContractOffers,
+    chooseContract,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

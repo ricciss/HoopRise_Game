@@ -8,11 +8,22 @@ import {
   strengthLabel,
   trust,
 } from "../game/league";
+import { formatMoney } from "../game/market";
 import { useGame, LABELS } from "../store/GameContext";
 import { styles } from "../styles";
 
 export default function ProfileScreen() {
-  const { player, college, level, team, draftPick, season } = useGame();
+  const {
+    player,
+    college,
+    level,
+    team,
+    draftPick,
+    season,
+    contract,
+    earnings,
+    contractHistory,
+  } = useGame();
   if (!player) return null;
 
   const keys = Object.keys(player.ratings) as (keyof Ratings)[];
@@ -54,6 +65,33 @@ export default function ProfileScreen() {
               {Math.round(trust(draftPick, proSeasonNumber(season)) * 100)}% of
               full minutes
             </Text>
+          )}
+        </View>
+      )}
+
+      {contract && (
+        <View style={styles.gameCard}>
+          <Text style={styles.gameTitle}>CONTRACT</Text>
+          <Text style={styles.eventTitle}>
+            {formatMoney(contract.salary)} per season
+          </Text>
+          <Text style={styles.highlightText}>• {contract.teamName}</Text>
+          <Text style={styles.highlightText}>
+            • {contract.yearsLeft} of {contract.years} seasons left
+          </Text>
+          <Text style={styles.highlightText}>
+            • Career earnings: {formatMoney(earnings)}
+          </Text>
+          {contractHistory.length > 1 && (
+            <View style={{ marginTop: 8 }}>
+              <Text style={styles.gameTitle}>PAST CONTRACTS</Text>
+              {contractHistory.map((c) => (
+                <Text key={c.season} style={styles.highlightText}>
+                  • From season {c.season}: {c.teamName}, {formatMoney(c.salary)}{" "}
+                  x {c.years}
+                </Text>
+              ))}
+            </View>
           )}
         </View>
       )}
