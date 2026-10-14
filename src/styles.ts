@@ -85,4 +85,12 @@ export const styles = StyleSheet.create({
   },
     historyHead: { color: "#888", fontSize: 11, flex: 1, textAlign: "center" },
   historyCell: { color: "#fff", fontSize: 13, fontWeight: "bold", flex: 1, textAlign: "center" },
+    pickRow: {
+    flexDirection: "row", alignItems: "center",
+    paddingVertical: 7, paddingHorizontal: 6, borderRadius: 8,
+  },
+  pickYou: { backgroundColor: "#3a2a10" },
+  pickNum: { color: "#ff8c00", fontSize: 14, fontWeight: "bold", width: 40 },
+  pickName: { color: "#fff", fontSize: 14, fontWeight: "bold" },
+  pickMeta: { color: "#888", fontSize: 12, marginTop: 2 },
 });

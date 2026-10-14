@@ -1,11 +1,18 @@
 import { View, Text } from "react-native";
 import { Ratings } from "../game/player";
 import { perkLines } from "../game/colleges";
+import {
+  pickLabel,
+  proSeasonNumber,
+  roleLabel,
+  strengthLabel,
+  trust,
+} from "../game/league";
 import { useGame, LABELS } from "../store/GameContext";
 import { styles } from "../styles";
 
 export default function ProfileScreen() {
-  const { player, college, level } = useGame();
+  const { player, college, level, team, draftPick, season } = useGame();
   if (!player) return null;
 
   const keys = Object.keys(player.ratings) as (keyof Ratings)[];
@@ -24,6 +31,32 @@ export default function ProfileScreen() {
         <Text style={styles.gameTitle}>OVERALL</Text>
         <Text style={styles.gameScore}>{overall}</Text>
       </View>
+
+      {team && (
+        <View style={styles.gameCard}>
+          <Text style={styles.gameTitle}>
+            {level.id === "pro" ? "YOUR TEAM" : "TEAM"}
+          </Text>
+          <Text style={styles.eventTitle}>{team.name}</Text>
+          <Text style={styles.highlightText}>
+            • {strengthLabel(team.strength)}
+          </Text>
+          <Text style={styles.highlightText}>
+            •{" "}
+            {draftPick !== null
+              ? `Drafted: ${pickLabel(draftPick)}`
+              : "Signed as an undrafted free agent"}
+          </Text>
+          <Text style={styles.highlightText}>• {roleLabel(draftPick)}</Text>
+          {level.id === "pro" && (
+            <Text style={styles.highlightText}>
+              • Playing time:{" "}
+              {Math.round(trust(draftPick, proSeasonNumber(season)) * 100)}% of
+              full minutes
+            </Text>
+          )}
+        </View>
+      )}
 
       {college && (
         <View style={styles.gameCard}>

@@ -3,6 +3,7 @@ import { Player } from "./game/player";
 import { GameResult } from "./game/simulation";
 import { SeasonStats, SeasonSummary } from "./game/season";
 import { Injury } from "./game/injuries";
+import { Team, DraftPickEntry, DraftResult } from "./game/league";
 
 export interface SaveData {
   player: Player;
@@ -17,6 +18,9 @@ export interface SaveData {
   injury?: Injury | null;
   collegeId?: string | null;
   offerIds?: string[] | null;
+  teamId?: number | null;
+  draftPick?: number | null;
+  draft?: DraftResult | null; // draft result waiting to be confirmed
 }
 
 // One finished season (a row in the season_history table)
@@ -24,7 +28,7 @@ export interface SeasonRecord {
   season: number;
   age: number;
   levelId: string;
-  college: string | null;
+  college: string | null; // college or pro team name
   games: number;
   wins: number;
   losses: number;
@@ -73,6 +77,21 @@ function getDb(): Promise<SQLite.SQLiteDatabase> {
           apg REAL NOT NULL,
           overall INTEGER NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS teams (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL,
+          strength INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS draft_class (
+          pick INTEGER PRIMARY KEY,
+          round INTEGER NOT NULL,
+          team_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          position TEXT NOT NULL,
+          overall INTEGER NOT NULL,
+          college TEXT NOT NULL,
+          is_user INTEGER NOT NULL
+        );
       `);
       return db;
     })();
@@ -105,11 +124,13 @@ export async function loadGame(): Promise<SaveData | null> {
   }
 }
 
-// Deletes the whole career: the save and the season history
+// Deletes the whole career: save, season history, league and draft
 export async function clearGame(): Promise<void> {
   try {
     const db = await getDb();
-    await db.execAsync("DELETE FROM save; DELETE FROM season_history;");
+    await db.execAsync(
+      "DELETE FROM save; DELETE FROM season_history; DELETE FROM teams; DELETE FROM draft_class;"
+    );
   } catch (e) {
     console.warn("Could not clear save", e);
   }
@@ -161,5 +182,58 @@ export async function loadHistory(): Promise<SeasonRecord[]> {
   } catch (e) {
     console.warn("Could not load history", e);
     return [];
+  }
+}
+
+export async function saveTeams(teams: Team[]): Promise<void> {
+  try {
+    const db = await getDb();
+    await db.runAsync("DELETE FROM teams");
+    for (const t of teams) {
+      await db.runAsync(
+        "INSERT INTO teams (id, name, strength) VALUES (?, ?, ?)",
+        t.id,
+        t.name,
+        t.strength
+      );
+    }
+  } catch (e) {
+    console.warn("Could not save teams", e);
+  }
+}
+
+export async function loadTeams(): Promise<Team[]> {
+  try {
+    const db = await getDb();
+    return await db.getAllAsync<Team>(
+      "SELECT id, name, strength FROM teams ORDER BY id"
+    );
+  } catch (e) {
+    console.warn("Could not load teams", e);
+    return [];
+  }
+}
+
+export async function saveDraftClass(board: DraftPickEntry[]): Promise<void> {
+  try {
+    const db = await getDb();
+    await db.runAsync("DELETE FROM draft_class");
+    for (const e of board) {
+      await db.runAsync(
+        `INSERT INTO draft_class
+          (pick, round, team_id, name, position, overall, college, is_user)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        e.pick,
+        e.round,
+        e.teamId,
+        e.name,
+        e.position,
+        e.overall,
+        e.college,
+        e.isUser ? 1 : 0
+      );
+    }
+  } catch (e) {
+    console.warn("Could not save draft class", e);
   }
 }

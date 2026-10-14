@@ -1,7 +1,7 @@
 import { Player, Ratings } from "./player";
 import { GameResult } from "./simulation";
 
-export const SEASON_WEEKS = 20;
+export const SEASON_WEEKS = 20; // 10 games per season, 2 weeks per game
 
 // Every second week is a game week
 export function isGameWeek(week: number): boolean {

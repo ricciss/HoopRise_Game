@@ -1,8 +1,14 @@
 import { Player, Ratings } from "./player";
 import { Level } from "./levels";
-import { College } from "./colleges";
 
 export const GAME_COST = 20;
+
+// Anything that changes how your team performs:
+// a college program or a pro team
+export interface Modifiers {
+  teamMod: number; // extra team points per quarter
+  minutesMod: number; // multiplies the minutes you play
+}
 
 export interface QuarterResult {
   quarter: number;
@@ -117,16 +123,16 @@ function simulateQuarter(
   };
 }
 
-// college is only used while the player plays at college level
+// mods = the college or pro team you play for (null = no modifiers)
 export function simulateGame(
   player: Player,
   energy: number,
   level: Level,
-  college: College | null = null
+  mods: Modifiers | null = null
 ): GameResult {
   const r = player.ratings;
-  const teamMod = college ? college.teamMod : 0;
-  const minutesMod = college ? college.minutesMod : 1;
+  const teamMod = mods ? mods.teamMod : 0;
+  const minutesMod = mods ? mods.minutesMod : 1;
 
   // Tired players perform worse
   const fatigue = energy >= 50 ? 1 : energy >= 25 ? 0.92 : 0.82;
