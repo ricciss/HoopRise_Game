@@ -93,4 +93,12 @@ export const styles = StyleSheet.create({
   pickNum: { color: "#ff8c00", fontSize: 14, fontWeight: "bold", width: 40 },
   pickName: { color: "#fff", fontSize: 14, fontWeight: "bold" },
   pickMeta: { color: "#888", fontSize: 12, marginTop: 2 },
+    standRow: {
+    flexDirection: "row", alignItems: "center",
+    paddingVertical: 7, paddingHorizontal: 6, borderRadius: 8,
+  },
+  standRank: { color: "#ff8c00", fontSize: 14, fontWeight: "bold", width: 30 },
+  standName: { color: "#fff", fontSize: 14, flex: 1 },
+  standRecord: { color: "#ccc", fontSize: 14, fontWeight: "bold", width: 56, textAlign: "right" },
+  playoffLine: { borderTopWidth: 1, borderTopColor: "#ff8c00", marginVertical: 4, paddingTop: 2 },
 });

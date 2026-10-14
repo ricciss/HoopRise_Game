@@ -1,6 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import { levelForSeason } from "../game/levels";
 import { formatMoney } from "../game/market";
+import { PLAYOFF_SPOTS, rankStandings } from "../game/standings";
 import { useGame } from "../store/GameContext";
 import { styles } from "../styles";
 
@@ -10,6 +11,9 @@ export default function SeasonSummaryScreen() {
     seasonSummary,
     level,
     contract,
+    teams,
+    team,
+    standings,
     nextSeason,
     openOffers,
     openDraft,
@@ -23,6 +27,13 @@ export default function SeasonSummaryScreen() {
   const toPro = movingUp && upcoming.id === "pro";
   const contractEnded =
     level.id === "pro" && contract !== null && contract.yearsLeft === 0;
+
+  // Where your team finished in the league
+  const ranked = rankStandings(standings, teams);
+  const mine =
+    level.id === "pro" && team
+      ? ranked.find((r) => r.teamId === team.id) ?? null
+      : null;
 
   return (
     <View>
@@ -57,6 +68,20 @@ export default function SeasonSummaryScreen() {
           </View>
         </View>
       </View>
+
+      {mine && (
+        <View style={{ marginBottom: 12 }}>
+          <Text style={styles.gameDay}>
+            League finish: #{mine.rank} of {ranked.length} ({mine.wins}-
+            {mine.losses})
+          </Text>
+          <Text style={styles.hint}>
+            {mine.rank <= PLAYOFF_SPOTS
+              ? "Your team finished in a playoff spot."
+              : `Only the top ${PLAYOFF_SPOTS} teams reach the playoffs.`}
+          </Text>
+        </View>
+      )}
 
       {level.id === "pro" && contract && (
         <View style={{ marginBottom: 12 }}>

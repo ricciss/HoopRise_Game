@@ -10,6 +10,12 @@ export interface Modifiers {
   minutesMod: number; // multiplies the minutes you play
 }
 
+// A real league team you play against (pros only)
+export interface Opponent {
+  name: string;
+  strength: number; // 30 (weak) to 70 (strong)
+}
+
 export interface QuarterResult {
   quarter: number;
   teamScore: number;
@@ -57,7 +63,8 @@ function simulateQuarter(
   fatigue: number,
   teamAvg: number,
   level: Level,
-  teamMod: number
+  teamMod: number,
+  oppMod: number
 ): QuarterResult {
   // Players get more tired in later quarters, low stamina makes it worse
   const tired = ((100 - r.stamina) / 100) * 0.05 * (quarter - 1);
@@ -107,7 +114,7 @@ function simulateQuarter(
   const impact = rebounds * 0.2 + assists * 0.3;
   const teammates = around(17 + teamMod + (teamAvg - 45) * 0.08, 4);
   const opponentScore = around(
-    level.opponentScore - (r.defense - 45) * 0.07,
+    level.opponentScore + oppMod - (r.defense - 45) * 0.07,
     4
   );
 
@@ -124,15 +131,19 @@ function simulateQuarter(
 }
 
 // mods = the college or pro team you play for (null = no modifiers)
+// opponent = a real league team (null = a generic team of this level)
 export function simulateGame(
   player: Player,
   energy: number,
   level: Level,
-  mods: Modifiers | null = null
+  mods: Modifiers | null = null,
+  opponent: Opponent | null = null
 ): GameResult {
   const r = player.ratings;
   const teamMod = mods ? mods.teamMod : 0;
   const minutesMod = mods ? mods.minutesMod : 1;
+  // Strong opponents score a bit more (-1 ... +1 per quarter)
+  const oppMod = opponent ? (opponent.strength - 50) * 0.05 : 0;
 
   // Tired players perform worse
   const fatigue = energy >= 50 ? 1 : energy >= 25 ? 0.92 : 0.82;
@@ -152,7 +163,7 @@ export function simulateGame(
   for (let q = 1; q <= 4; q++) {
     const minutes = base + (q <= extra ? 1 : 0);
     quarters.push(
-      simulateQuarter(q, minutes, r, fatigue, teamAvg, level, teamMod)
+      simulateQuarter(q, minutes, r, fatigue, teamAvg, level, teamMod, oppMod)
     );
   }
 
@@ -172,7 +183,7 @@ export function simulateGame(
   }
 
   return {
-    opponent: pick(level.opponents),
+    opponent: opponent ? opponent.name : pick(level.opponents),
     teamScore,
     opponentScore,
     won: teamScore > opponentScore,

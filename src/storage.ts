@@ -5,6 +5,7 @@ import { SeasonStats, SeasonSummary } from "./game/season";
 import { Injury } from "./game/injuries";
 import { Team, DraftPickEntry, DraftResult } from "./game/league";
 import { Contract, ContractOffer } from "./game/market";
+import { StandingRow, RankedRow } from "./game/standings";
 
 export interface SaveData {
   player: Player;
@@ -25,6 +26,7 @@ export interface SaveData {
   contract?: Contract | null;
   earnings?: number;
   contractOffers?: ContractOffer[] | null; // offers waiting for a decision
+  standings?: StandingRow[]; // league table of the current season
 }
 
 // One finished season (a row in the season_history table)
@@ -117,6 +119,14 @@ function getDb(): Promise<SQLite.SQLiteDatabase> {
           salary REAL NOT NULL,
           years INTEGER NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS standings (
+          season INTEGER NOT NULL,
+          team_id INTEGER NOT NULL,
+          wins INTEGER NOT NULL,
+          losses INTEGER NOT NULL,
+          place INTEGER NOT NULL,
+          PRIMARY KEY (season, team_id)
+        );
       `);
       return db;
     })();
@@ -149,12 +159,12 @@ export async function loadGame(): Promise<SaveData | null> {
   }
 }
 
-// Deletes the whole career: save, history, league, draft and contracts
+// Deletes the whole career: save, history, league, draft, contracts, tables
 export async function clearGame(): Promise<void> {
   try {
     const db = await getDb();
     await db.execAsync(
-      "DELETE FROM save; DELETE FROM season_history; DELETE FROM teams; DELETE FROM draft_class; DELETE FROM contracts;"
+      "DELETE FROM save; DELETE FROM season_history; DELETE FROM teams; DELETE FROM draft_class; DELETE FROM contracts; DELETE FROM standings;"
     );
   } catch (e) {
     console.warn("Could not clear save", e);
@@ -294,5 +304,29 @@ export async function loadContractHistory(): Promise<ContractRecord[]> {
   } catch (e) {
     console.warn("Could not load contracts", e);
     return [];
+  }
+}
+
+// Final league table of a finished season
+export async function saveStandings(
+  season: number,
+  rows: RankedRow[]
+): Promise<void> {
+  try {
+    const db = await getDb();
+    await db.runAsync("DELETE FROM standings WHERE season = ?", season);
+    for (const r of rows) {
+      await db.runAsync(
+        `INSERT INTO standings (season, team_id, wins, losses, place)
+         VALUES (?, ?, ?, ?, ?)`,
+        season,
+        r.teamId,
+        r.wins,
+        r.losses,
+        r.rank
+      );
+    }
+  } catch (e) {
+    console.warn("Could not save standings", e);
   }
 }

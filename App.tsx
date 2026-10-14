@@ -12,6 +12,7 @@ import ContractOffersScreen from "./src/screens/ContractOffersScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import StatsScreen from "./src/screens/StatsScreen";
+import LeagueScreen from "./src/screens/LeagueScreen";
 import { styles } from "./src/styles";
 
 const Tab = createBottomTabNavigator();
@@ -41,6 +42,14 @@ function StatsTab() {
   return (
     <Screen>
       <StatsScreen />
+    </Screen>
+  );
+}
+
+function LeagueTab() {
+  return (
+    <Screen>
+      <LeagueScreen />
     </Screen>
   );
 }
@@ -119,6 +128,7 @@ function Main() {
         <Tab.Screen name="Home" component={HomeTab} />
         <Tab.Screen name="Profile" component={ProfileTab} />
         <Tab.Screen name="Stats" component={StatsTab} />
+        <Tab.Screen name="League" component={LeagueTab} />
       </Tab.Navigator>
     </NavigationContainer>
   );

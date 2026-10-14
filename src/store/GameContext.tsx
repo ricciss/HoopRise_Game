@@ -17,6 +17,7 @@ import {
   simulateGame,
   GameResult,
   Modifiers,
+  Opponent,
   GAME_COST,
 } from "../game/simulation";
 import {
@@ -66,6 +67,13 @@ import {
   formatMoney,
 } from "../game/market";
 import {
+  StandingRow,
+  newStandings,
+  pickOpponent,
+  playLeagueWeek,
+  rankStandings,
+} from "../game/standings";
+import {
   SeasonRecord,
   ContractRecord,
   saveGame,
@@ -78,6 +86,7 @@ import {
   saveDraftClass,
   saveContractRecord,
   loadContractHistory,
+  saveStandings,
 } from "../storage";
 
 export const LABELS: Record<keyof Ratings, string> = {
@@ -138,6 +147,7 @@ interface GameState {
   contractHistory: ContractRecord[];
   openContractOffers: () => void;
   chooseContract: (index: number) => void;
+  standings: StandingRow[];
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -176,6 +186,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     ContractOffer[] | null
   >(null);
   const [contractHistory, setContractHistory] = useState<ContractRecord[]>([]);
+  const [standings, setStandings] = useState<StandingRow[]>([]);
 
   // The level (high school, college, pro) depends on the season number
   const level = levelForSeason(season);
@@ -212,6 +223,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
           await saveTeams(league);
         }
         setTeams(league);
+        setStandings(
+          data.standings && data.standings.length > 0
+            ? data.standings
+            : newStandings(league)
+        );
         setTeamId(data.teamId ?? null);
         setDraftPick(data.draftPick ?? null);
         setDraft(data.draft ?? null);
@@ -262,6 +278,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         contract,
         earnings,
         contractOffers,
+        standings,
       });
     } else {
       clearGame();
@@ -285,11 +302,42 @@ export function GameProvider({ children }: { children: ReactNode }) {
     contract,
     earnings,
     contractOffers,
+    standings,
   ]);
 
+  // Picks the league team you play this week (pros only)
+  function leagueOpponent(): Team | null {
+    return level.id === "pro" && team
+      ? pickOpponent(standings, teams, team.id)
+      : null;
+  }
+
+  // Plays the league week and returns the new table.
+  // won = null means you did not play this week.
+  function updateStandings(
+    opponentTeam: Team | null,
+    won: boolean | null
+  ): StandingRow[] {
+    if (!team || !opponentTeam) return standings;
+    const next = playLeagueWeek(
+      standings,
+      teams,
+      team.id,
+      opponentTeam.id,
+      won
+    );
+    setStandings(next);
+    return next;
+  }
+
   // Moves to the next week, or ends the season after the last week.
-  // "current" is the player after this week's action (e.g. after training).
-  function advance(nextStats: SeasonStats, current: Player | null = player) {
+  // "current" is the player after this week's action (e.g. after training),
+  // "table" is the league table after this week.
+  function advance(
+    nextStats: SeasonStats,
+    current: Player | null = player,
+    table: StandingRow[] = standings
+  ) {
     if (!current) return;
     setSeasonStats(nextStats);
     if (week >= SEASON_WEEKS) {
@@ -303,6 +351,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
           ...contract,
           yearsLeft: Math.max(0, contract.yearsLeft - 1),
         });
+      }
+
+      // Keep the final league table of this season
+      if (level.id === "pro" && teams.length > 0) {
+        saveStandings(season, rankStandings(table, teams));
       }
 
       // Remember this season in the history table
@@ -344,6 +397,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const league = generateTeams();
     setTeams(league);
     saveTeams(league);
+    setStandings(newStandings(league));
     setTeamId(null);
     setDraftPick(null);
     setDraft(null);
@@ -409,7 +463,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   function playGame() {
     if (!player || !isGameWeek(week) || injury) return;
-    const result = simulateGame(player, energy, level, mods);
+    const opponentTeam = leagueOpponent();
+    const opponent: Opponent | null = opponentTeam
+      ? { name: opponentTeam.name, strength: opponentTeam.strength }
+      : null;
+    const result = simulateGame(player, energy, level, mods, opponent);
     setLastGame(result);
     setLiveGame({ game: result, shown: 0 });
 
@@ -420,9 +478,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       text += ` Injury: ${describeInjury(hurt)}`;
     }
 
+    const table = updateStandings(opponentTeam, result.won);
     setEnergy(Math.max(0, energy - GAME_COST));
     setMessage(text);
-    advance(addGame(seasonStats, result));
+    advance(addGame(seasonStats, result), player, table);
   }
 
   // Game week while injured: skip the game and recover faster
@@ -436,13 +495,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
         ? "You sat out the game and focused on recovery. +20 energy"
         : "You sat out the game and you are healthy again! +20 energy"
     );
-    advance(seasonStats);
+    // Your team still plays, the result depends on team strength
+    const table = updateStandings(leagueOpponent(), null);
+    advance(seasonStats, player, table);
   }
 
   // Game week while injured: play anyway, with a bad performance and a risk
   function playHurt() {
     if (!player || !isGameWeek(week) || !injury) return;
-    const result = simulateGame(player, Math.min(energy, 20), level, mods);
+    const opponentTeam = leagueOpponent();
+    const opponent: Opponent | null = opponentTeam
+      ? { name: opponentTeam.name, strength: opponentTeam.strength }
+      : null;
+    const result = simulateGame(
+      player,
+      Math.min(energy, 20),
+      level,
+      mods,
+      opponent
+    );
     setLastGame(result);
     setLiveGame({ game: result, shown: 0 });
     setEnergy(Math.max(0, energy - GAME_COST));
@@ -458,8 +529,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (!healed) text += " You are healthy again!";
     }
 
+    const table = updateStandings(opponentTeam, result.won);
     setMessage(text);
-    advance(addGame(seasonStats, result));
+    advance(addGame(seasonStats, result), player, table);
   }
 
   function chooseEvent(index: number) {
@@ -487,11 +559,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setEvent(null);
     setInjury(null);
 
-    // Teams get stronger or weaker over time
+    // Teams get stronger or weaker over time, and the table starts again
     if (teams.length > 0) {
       const drifted = driftTeams(teams);
       setTeams(drifted);
       saveTeams(drifted);
+      setStandings(newStandings(drifted));
     }
 
     setMessage(
@@ -610,6 +683,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setOffers(null);
     setHistory([]);
     setTeams([]);
+    setStandings([]);
     setTeamId(null);
     setDraftPick(null);
     setDraft(null);
@@ -675,6 +749,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     contractHistory,
     openContractOffers,
     chooseContract,
+    standings,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
