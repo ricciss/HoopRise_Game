@@ -74,8 +74,18 @@ import {
   rankStandings,
 } from "../game/standings";
 import {
+  Playoffs,
+  startPlayoffs,
+  advancePlayoffs,
+  userMatch,
+  userOpponentId,
+  userResult,
+  ROUND_NAMES,
+} from "../game/playoffs";
+import {
   SeasonRecord,
   ContractRecord,
+  ChampionRecord,
   saveGame,
   loadGame,
   clearGame,
@@ -87,6 +97,8 @@ import {
   saveContractRecord,
   loadContractHistory,
   saveStandings,
+  saveChampion,
+  loadChampions,
 } from "../storage";
 
 export const LABELS: Record<keyof Ratings, string> = {
@@ -148,6 +160,9 @@ interface GameState {
   openContractOffers: () => void;
   chooseContract: (index: number) => void;
   standings: StandingRow[];
+  playoffs: Playoffs | null;
+  champions: ChampionRecord[];
+  playPlayoffGame: () => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -187,6 +202,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   >(null);
   const [contractHistory, setContractHistory] = useState<ContractRecord[]>([]);
   const [standings, setStandings] = useState<StandingRow[]>([]);
+  const [playoffs, setPlayoffs] = useState<Playoffs | null>(null);
+  const [champions, setChampions] = useState<ChampionRecord[]>([]);
 
   // The level (high school, college, pro) depends on the season number
   const level = levelForSeason(season);
@@ -207,14 +224,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
       : null;
 
-  // Load saved game, history, league and contracts on startup
+  // Load saved game, history, league, contracts and titles on startup
   useEffect(() => {
     Promise.all([
       loadGame(),
       loadHistory(),
       loadTeams(),
       loadContractHistory(),
-    ]).then(async ([data, hist, savedTeams, contracts]) => {
+      loadChampions(),
+    ]).then(async ([data, hist, savedTeams, contracts, titles]) => {
       if (data) {
         // Old careers without a league get one now
         let league = savedTeams;
@@ -235,6 +253,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setEarnings(data.earnings ?? 0);
         setContractOffers(data.contractOffers ?? null);
         setContractHistory(contracts);
+        setPlayoffs(data.playoffs ?? null);
+        setChampions(titles);
 
         setPlayer(data.player);
         setWeek(Math.min(data.week, SEASON_WEEKS));
@@ -279,6 +299,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         earnings,
         contractOffers,
         standings,
+        playoffs,
       });
     } else {
       clearGame();
@@ -303,6 +324,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     earnings,
     contractOffers,
     standings,
+    playoffs,
   ]);
 
   // Picks the league team you play this week (pros only)
@@ -330,6 +352,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return next;
   }
 
+  // Remembers who won the title and how your run ended
+  function recordPlayoffs(p: Playoffs) {
+    const champ = teams.find((t) => t.id === p.champion);
+    const record: ChampionRecord = {
+      season: p.season,
+      teamName: champ ? champ.name : "Unknown",
+      userResult: userResult(p),
+    };
+    setChampions((list) => [
+      ...list.filter((c) => c.season !== record.season),
+      record,
+    ]);
+    saveChampion(record);
+  }
+
   // Moves to the next week, or ends the season after the last week.
   // "current" is the player after this week's action (e.g. after training),
   // "table" is the league table after this week.
@@ -342,7 +379,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setSeasonStats(nextStats);
     if (week >= SEASON_WEEKS) {
       const summary = summarize(season, current.age, nextStats);
-      setSeasonSummary(summary);
 
       // Pros get paid at the end of every season, and the contract shortens
       if (level.id === "pro" && contract) {
@@ -353,10 +389,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      // Keep the final league table of this season
+      // Keep the final league table and start the playoffs
+      let playoffsActive = false;
       if (level.id === "pro" && teams.length > 0) {
-        saveStandings(season, rankStandings(table, teams));
+        const ranked = rankStandings(table, teams);
+        saveStandings(season, ranked);
+        if (team) {
+          const p = startPlayoffs(season, ranked, teams, team.id);
+          setPlayoffs(p);
+          playoffsActive = p.active;
+          if (!p.active) recordPlayoffs(p);
+        }
       }
+
+      // The summary waits until your playoff run is over
+      if (!playoffsActive) setSeasonSummary(summary);
 
       // Remember this season in the history table
       const keys = Object.keys(current.ratings) as (keyof Ratings)[];
@@ -405,6 +452,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setEarnings(0);
     setContractOffers(null);
     setContractHistory([]);
+    setPlayoffs(null);
+    setChampions([]);
 
     setPlayer(createPlayer(name.trim(), position));
     setWeek(1);
@@ -534,6 +583,46 @@ export function GameProvider({ children }: { children: ReactNode }) {
     advance(addGame(seasonStats, result), player, table);
   }
 
+  // Plays your game of the current playoff round
+  function playPlayoffGame() {
+    if (!player || !playoffs || !playoffs.active) return;
+    const opponentId = userOpponentId(playoffs);
+    const opponentTeam = teams.find((t) => t.id === opponentId);
+    if (!opponentTeam || !userMatch(playoffs)) return;
+
+    // You rest between rounds, and an injury heals a little
+    const startEnergy = Math.min(MAX_ENERGY, energy + REST_GAIN);
+    const healed = injury ? tickInjury(injury, 2) : null;
+    setInjury(healed);
+    const playingHurt = healed !== null;
+    const simEnergy = playingHurt ? Math.min(startEnergy, 20) : startEnergy;
+
+    const result = simulateGame(player, simEnergy, level, mods, {
+      name: opponentTeam.name,
+      strength: opponentTeam.strength,
+    });
+    setLastGame(result);
+    setLiveGame({ game: result, shown: 0 });
+    setEnergy(Math.max(0, startEnergy - GAME_COST));
+
+    const roundName = ROUND_NAMES[playoffs.round];
+    const next = advancePlayoffs(playoffs, teams, result.won);
+    setPlayoffs(next);
+
+    let text = result.won
+      ? `${roundName}: you won! On to the next round.`
+      : `${roundName}: your season ends here.`;
+    if (!next.active) {
+      recordPlayoffs(next);
+      setSeasonSummary(summarize(season, player.age, seasonStats));
+      text =
+        next.champion === next.userTeamId
+          ? "You are the champions!"
+          : `${roundName}: your season ends here.`;
+    }
+    setMessage(text);
+  }
+
   function chooseEvent(index: number) {
     if (!player || !event) return;
     const choice = event.choices[index];
@@ -558,6 +647,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setLiveGame(null);
     setEvent(null);
     setInjury(null);
+    setPlayoffs(null);
 
     // Teams get stronger or weaker over time, and the table starts again
     if (teams.length > 0) {
@@ -691,6 +781,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setEarnings(0);
     setContractOffers(null);
     setContractHistory([]);
+    setPlayoffs(null);
+    setChampions([]);
   }
 
   function nextQuarter() {
@@ -750,6 +842,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     openContractOffers,
     chooseContract,
     standings,
+    playoffs,
+    champions,
+    playPlayoffGame,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

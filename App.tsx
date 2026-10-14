@@ -9,6 +9,7 @@ import SeasonSummaryScreen from "./src/screens/SeasonSummaryScreen";
 import CollegeOffersScreen from "./src/screens/CollegeOffersScreen";
 import DraftScreen from "./src/screens/DraftScreen";
 import ContractOffersScreen from "./src/screens/ContractOffersScreen";
+import PlayoffScreen from "./src/screens/PlayoffScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import StatsScreen from "./src/screens/StatsScreen";
@@ -63,6 +64,7 @@ function Main() {
     offers,
     draft,
     contractOffers,
+    playoffs,
   } = useGame();
 
   if (!loaded) {
@@ -101,6 +103,15 @@ function Main() {
     return (
       <Screen>
         <ContractOffersScreen />
+      </Screen>
+    );
+  }
+
+  // Your playoff run (a game that is being watched is shown on the Home tab)
+  if (playoffs && playoffs.active && !liveGame) {
+    return (
+      <Screen>
+        <PlayoffScreen />
       </Screen>
     );
   }

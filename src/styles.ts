@@ -101,4 +101,8 @@ export const styles = StyleSheet.create({
   standName: { color: "#fff", fontSize: 14, flex: 1 },
   standRecord: { color: "#ccc", fontSize: 14, fontWeight: "bold", width: 56, textAlign: "right" },
   playoffLine: { borderTopWidth: 1, borderTopColor: "#ff8c00", marginVertical: 4, paddingTop: 2 },
+    matchTitle: { color: "#ff8c00", fontSize: 13, fontWeight: "bold", marginTop: 14, marginBottom: 4 },
+  matchRow: { paddingVertical: 6, paddingHorizontal: 8, borderRadius: 8, marginBottom: 4 },
+  matchTeam: { color: "#aaa", fontSize: 14, paddingVertical: 1 },
+  matchWinner: { color: "#fff", fontWeight: "bold" },
 });

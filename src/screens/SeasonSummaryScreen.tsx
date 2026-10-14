@@ -2,6 +2,7 @@ import { View, Text, Pressable } from "react-native";
 import { levelForSeason } from "../game/levels";
 import { formatMoney } from "../game/market";
 import { PLAYOFF_SPOTS, rankStandings } from "../game/standings";
+import { resultText, userResult } from "../game/playoffs";
 import { useGame } from "../store/GameContext";
 import { styles } from "../styles";
 
@@ -14,6 +15,7 @@ export default function SeasonSummaryScreen() {
     teams,
     team,
     standings,
+    playoffs,
     nextSeason,
     openOffers,
     openDraft,
@@ -33,6 +35,14 @@ export default function SeasonSummaryScreen() {
   const mine =
     level.id === "pro" && team
       ? ranked.find((r) => r.teamId === team.id) ?? null
+      : null;
+
+  // How your playoff run ended
+  const finished = playoffs !== null && !playoffs.active;
+  const result = playoffs && finished ? userResult(playoffs) : null;
+  const champion =
+    playoffs && finished
+      ? teams.find((t) => t.id === playoffs.champion) ?? null
       : null;
 
   return (
@@ -80,6 +90,19 @@ export default function SeasonSummaryScreen() {
               ? "Your team finished in a playoff spot."
               : `Only the top ${PLAYOFF_SPOTS} teams reach the playoffs.`}
           </Text>
+        </View>
+      )}
+
+      {result && (
+        <View style={{ marginBottom: 12 }}>
+          <Text
+            style={result === "champion" ? styles.trainDay : styles.gameDay}
+          >
+            Playoffs: {resultText(result)}
+          </Text>
+          {champion && result !== "champion" && (
+            <Text style={styles.hint}>Champion: {champion.name}</Text>
+          )}
         </View>
       )}
 

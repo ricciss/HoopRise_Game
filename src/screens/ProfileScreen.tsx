@@ -23,6 +23,7 @@ export default function ProfileScreen() {
     contract,
     earnings,
     contractHistory,
+    champions,
   } = useGame();
   if (!player) return null;
 
@@ -30,6 +31,9 @@ export default function ProfileScreen() {
   const overall = Math.round(
     keys.reduce((sum, k) => sum + player.ratings[k], 0) / keys.length
   );
+
+  const titles = champions.filter((c) => c.userResult === "champion");
+  const appearances = champions.filter((c) => c.userResult !== "missed");
 
   return (
     <View>
@@ -42,6 +46,23 @@ export default function ProfileScreen() {
         <Text style={styles.gameTitle}>OVERALL</Text>
         <Text style={styles.gameScore}>{overall}</Text>
       </View>
+
+      {champions.length > 0 && (
+        <View style={styles.gameCard}>
+          <Text style={styles.gameTitle}>TROPHY CASE</Text>
+          <Text style={styles.eventTitle}>
+            {titles.length} championship{titles.length === 1 ? "" : "s"}
+          </Text>
+          <Text style={styles.highlightText}>
+            • Playoff appearances: {appearances.length}
+          </Text>
+          {titles.map((c) => (
+            <Text key={c.season} style={styles.highlightText}>
+              • Champion in season {c.season}
+            </Text>
+          ))}
+        </View>
+      )}
 
       {team && (
         <View style={styles.gameCard}>

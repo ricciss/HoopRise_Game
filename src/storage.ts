@@ -6,6 +6,7 @@ import { Injury } from "./game/injuries";
 import { Team, DraftPickEntry, DraftResult } from "./game/league";
 import { Contract, ContractOffer } from "./game/market";
 import { StandingRow, RankedRow } from "./game/standings";
+import { Playoffs } from "./game/playoffs";
 
 export interface SaveData {
   player: Player;
@@ -27,6 +28,7 @@ export interface SaveData {
   earnings?: number;
   contractOffers?: ContractOffer[] | null; // offers waiting for a decision
   standings?: StandingRow[]; // league table of the current season
+  playoffs?: Playoffs | null; // playoffs of the current season
 }
 
 // One finished season (a row in the season_history table)
@@ -52,6 +54,13 @@ export interface ContractRecord {
   years: number;
 }
 
+// Who won the title and how your run ended (a row in the champions table)
+export interface ChampionRecord {
+  season: number;
+  teamName: string; // the champion
+  userResult: string; // champion, final, semifinal, quarterfinal, missed
+}
+
 interface HistoryRow {
   season: number;
   age: number;
@@ -71,6 +80,12 @@ interface ContractRow {
   team_name: string;
   salary: number;
   years: number;
+}
+
+interface ChampionRow {
+  season: number;
+  team_name: string;
+  user_result: string;
 }
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -127,6 +142,11 @@ function getDb(): Promise<SQLite.SQLiteDatabase> {
           place INTEGER NOT NULL,
           PRIMARY KEY (season, team_id)
         );
+        CREATE TABLE IF NOT EXISTS champions (
+          season INTEGER PRIMARY KEY,
+          team_name TEXT NOT NULL,
+          user_result TEXT NOT NULL
+        );
       `);
       return db;
     })();
@@ -159,12 +179,12 @@ export async function loadGame(): Promise<SaveData | null> {
   }
 }
 
-// Deletes the whole career: save, history, league, draft, contracts, tables
+// Deletes the whole career: save, history, league, draft, contracts, titles
 export async function clearGame(): Promise<void> {
   try {
     const db = await getDb();
     await db.execAsync(
-      "DELETE FROM save; DELETE FROM season_history; DELETE FROM teams; DELETE FROM draft_class; DELETE FROM contracts; DELETE FROM standings;"
+      "DELETE FROM save; DELETE FROM season_history; DELETE FROM teams; DELETE FROM draft_class; DELETE FROM contracts; DELETE FROM standings; DELETE FROM champions;"
     );
   } catch (e) {
     console.warn("Could not clear save", e);
@@ -328,5 +348,37 @@ export async function saveStandings(
     }
   } catch (e) {
     console.warn("Could not save standings", e);
+  }
+}
+
+export async function saveChampion(r: ChampionRecord): Promise<void> {
+  try {
+    const db = await getDb();
+    await db.runAsync(
+      `INSERT OR REPLACE INTO champions (season, team_name, user_result)
+       VALUES (?, ?, ?)`,
+      r.season,
+      r.teamName,
+      r.userResult
+    );
+  } catch (e) {
+    console.warn("Could not save champion", e);
+  }
+}
+
+export async function loadChampions(): Promise<ChampionRecord[]> {
+  try {
+    const db = await getDb();
+    const rows = await db.getAllAsync<ChampionRow>(
+      "SELECT season, team_name, user_result FROM champions ORDER BY season"
+    );
+    return rows.map((r) => ({
+      season: r.season,
+      teamName: r.team_name,
+      userResult: r.user_result,
+    }));
+  } catch (e) {
+    console.warn("Could not load champions", e);
+    return [];
   }
 }
