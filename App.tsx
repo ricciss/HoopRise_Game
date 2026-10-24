@@ -10,6 +10,7 @@ import CollegeOffersScreen from "./src/screens/CollegeOffersScreen";
 import DraftScreen from "./src/screens/DraftScreen";
 import ContractOffersScreen from "./src/screens/ContractOffersScreen";
 import PlayoffScreen from "./src/screens/PlayoffScreen";
+import CareerEndScreen from "./src/screens/CareerEndScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import StatsScreen from "./src/screens/StatsScreen";
@@ -59,6 +60,7 @@ function Main() {
   const {
     loaded,
     player,
+    retired,
     seasonSummary,
     liveGame,
     offers,
@@ -79,6 +81,15 @@ function Main() {
     return (
       <Screen>
         <CreatePlayerScreen />
+      </Screen>
+    );
+  }
+
+  // The career is over
+  if (retired) {
+    return (
+      <Screen>
+        <CareerEndScreen />
       </Screen>
     );
   }

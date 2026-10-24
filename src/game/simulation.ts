@@ -143,7 +143,7 @@ export function simulateGame(
   const teamMod = mods ? mods.teamMod : 0;
   const minutesMod = mods ? mods.minutesMod : 1;
   // Strong opponents score a bit more (-1 ... +1 per quarter)
-  const oppMod = opponent ? (opponent.strength - 50) * 0.05 : 0;
+  const oppMod = opponent ? (opponent.strength - 50) * 0.15 : 0;
 
   // Tired players perform worse
   const fatigue = energy >= 50 ? 1 : energy >= 25 ? 0.92 : 0.82;

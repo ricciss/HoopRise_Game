@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { levelForSeason } from "../game/levels";
 import { formatMoney } from "../game/market";
 import { PLAYOFF_SPOTS, rankStandings } from "../game/standings";
 import { resultText, userResult } from "../game/playoffs";
+import { canRetire, mustRetire } from "../game/legacy";
 import { useGame } from "../store/GameContext";
 import { styles } from "../styles";
 
@@ -20,7 +22,9 @@ export default function SeasonSummaryScreen() {
     openOffers,
     openDraft,
     openContractOffers,
+    retire,
   } = useGame();
+  const [confirming, setConfirming] = useState(false);
   if (!player || !seasonSummary) return null;
 
   const upcoming = levelForSeason(seasonSummary.season + 1);
@@ -29,6 +33,10 @@ export default function SeasonSummaryScreen() {
   const toPro = movingUp && upcoming.id === "pro";
   const contractEnded =
     level.id === "pro" && contract !== null && contract.yearsLeft === 0;
+
+  // Retirement: possible from a certain age, forced at the maximum age
+  const mayRetire = canRetire(player.age);
+  const forced = mustRetire(player.age);
 
   // Where your team finished in the league
   const ranked = rankStandings(standings, teams);
@@ -135,26 +143,56 @@ export default function SeasonSummaryScreen() {
         </View>
       )}
 
-      {toCollege ? (
-        <Pressable style={styles.gameButton} onPress={openOffers}>
-          <Text style={styles.buttonText}>See college offers</Text>
+      {!forced &&
+        (toCollege ? (
+          <Pressable style={styles.gameButton} onPress={openOffers}>
+            <Text style={styles.buttonText}>See college offers</Text>
+          </Pressable>
+        ) : toPro ? (
+          <Pressable style={styles.gameButton} onPress={openDraft}>
+            <Text style={styles.buttonText}>Go to the draft</Text>
+          </Pressable>
+        ) : contractEnded ? (
+          <Pressable style={styles.gameButton} onPress={openContractOffers}>
+            <Text style={styles.buttonText}>See contract offers</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.gameButton} onPress={nextSeason}>
+            <Text style={styles.buttonText}>
+              {movingUp
+                ? `Move up to ${upcoming.name}`
+                : `Start season ${seasonSummary.season + 1}`}
+            </Text>
+          </Pressable>
+        ))}
+
+      {mayRetire && !forced && !confirming && (
+        <Pressable style={styles.hurtButton} onPress={() => setConfirming(true)}>
+          <Text style={styles.buttonText}>Retire from basketball</Text>
         </Pressable>
-      ) : toPro ? (
-        <Pressable style={styles.gameButton} onPress={openDraft}>
-          <Text style={styles.buttonText}>Go to the draft</Text>
-        </Pressable>
-      ) : contractEnded ? (
-        <Pressable style={styles.gameButton} onPress={openContractOffers}>
-          <Text style={styles.buttonText}>See contract offers</Text>
-        </Pressable>
-      ) : (
-        <Pressable style={styles.gameButton} onPress={nextSeason}>
-          <Text style={styles.buttonText}>
-            {movingUp
-              ? `Move up to ${upcoming.name}`
-              : `Start season ${seasonSummary.season + 1}`}
+      )}
+
+      {mayRetire && (forced || confirming) && (
+        <View>
+          <Text style={styles.hint}>
+            {forced
+              ? `At ${player.age} it is time to hang up the sneakers. Your career ends here.`
+              : "Retiring ends your career. This cannot be undone."}
           </Text>
-        </Pressable>
+          <Pressable style={styles.hurtButton} onPress={retire}>
+            <Text style={styles.buttonText}>
+              {forced ? "End my career" : "Yes, retire"}
+            </Text>
+          </Pressable>
+          {!forced && (
+            <Pressable
+              style={styles.button}
+              onPress={() => setConfirming(false)}
+            >
+              <Text style={styles.buttonText}>Keep playing</Text>
+            </Pressable>
+          )}
+        </View>
       )}
     </View>
   );

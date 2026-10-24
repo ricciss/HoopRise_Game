@@ -29,6 +29,7 @@ export interface SaveData {
   contractOffers?: ContractOffer[] | null; // offers waiting for a decision
   standings?: StandingRow[]; // league table of the current season
   playoffs?: Playoffs | null; // playoffs of the current season
+  retired?: boolean; // the career is over
 }
 
 // One finished season (a row in the season_history table)
@@ -91,7 +92,7 @@ interface ChampionRow {
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 // Opens the database once and creates the tables if they do not exist
-function getDb(): Promise<SQLite.SQLiteDatabase> {
+export function getDb(): Promise<SQLite.SQLiteDatabase> {
   if (!dbPromise) {
     dbPromise = (async () => {
       const db = await SQLite.openDatabaseAsync("hooprise.db");

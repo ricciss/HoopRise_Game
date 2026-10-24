@@ -83,6 +83,11 @@ import {
   ROUND_NAMES,
 } from "../game/playoffs";
 import {
+  CareerSummary,
+  buildCareerSummary,
+  canRetire,
+} from "../game/legacy";
+import {
   SeasonRecord,
   ContractRecord,
   ChampionRecord,
@@ -100,6 +105,10 @@ import {
   saveChampion,
   loadChampions,
 } from "../storage";
+import { ArchivedCareer, archiveCareer, loadArchive } from "../archiveStorage";
+
+// Playoff opponents play as if they were this much stronger
+const PLAYOFF_INTENSITY = 15;
 
 export const LABELS: Record<keyof Ratings, string> = {
   shooting: "Shooting",
@@ -163,6 +172,10 @@ interface GameState {
   playoffs: Playoffs | null;
   champions: ChampionRecord[];
   playPlayoffGame: () => void;
+  retired: boolean;
+  careerSummary: CareerSummary | null;
+  pastCareers: ArchivedCareer[];
+  retire: () => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -204,6 +217,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [standings, setStandings] = useState<StandingRow[]>([]);
   const [playoffs, setPlayoffs] = useState<Playoffs | null>(null);
   const [champions, setChampions] = useState<ChampionRecord[]>([]);
+  const [retired, setRetired] = useState(false);
+  const [pastCareers, setPastCareers] = useState<ArchivedCareer[]>([]);
 
   // The level (high school, college, pro) depends on the season number
   const level = levelForSeason(season);
@@ -223,6 +238,24 @@ export function GameProvider({ children }: { children: ReactNode }) {
           minutesMod: trust(draftPick, proSeasonNumber(season)),
         }
       : null;
+
+  // The summary of a finished career (only exists after retirement)
+  const careerSummary: CareerSummary | null =
+    retired && player
+      ? buildCareerSummary({
+          player,
+          history,
+          champions,
+          earnings,
+          draftPick,
+          college: college ? college.name : null,
+        })
+      : null;
+
+  // The archive of past careers belongs to the player profile
+  useEffect(() => {
+    loadArchive().then(setPastCareers);
+  }, []);
 
   // Load saved game, history, league, contracts and titles on startup
   useEffect(() => {
@@ -255,6 +288,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setContractHistory(contracts);
         setPlayoffs(data.playoffs ?? null);
         setChampions(titles);
+        setRetired(data.retired ?? false);
 
         setPlayer(data.player);
         setWeek(Math.min(data.week, SEASON_WEEKS));
@@ -300,6 +334,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         contractOffers,
         standings,
         playoffs,
+        retired,
       });
     } else {
       clearGame();
@@ -325,6 +360,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     contractOffers,
     standings,
     playoffs,
+    retired,
   ]);
 
   // Picks the league team you play this week (pros only)
@@ -454,6 +490,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setContractHistory([]);
     setPlayoffs(null);
     setChampions([]);
+    setRetired(false);
 
     setPlayer(createPlayer(name.trim(), position));
     setWeek(1);
@@ -597,9 +634,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const playingHurt = healed !== null;
     const simEnergy = playingHurt ? Math.min(startEnergy, 20) : startEnergy;
 
+    // Playoff games are harder than regular season games
     const result = simulateGame(player, simEnergy, level, mods, {
       name: opponentTeam.name,
-      strength: opponentTeam.strength,
+      strength: opponentTeam.strength + PLAYOFF_INTENSITY,
     });
     setLastGame(result);
     setLiveGame({ game: result, shown: 0 });
@@ -764,6 +802,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  // Ends the career and adds it to the archive of past careers
+  function retire() {
+    if (!player || retired || !canRetire(player.age)) return;
+    const summary = buildCareerSummary({
+      player,
+      history,
+      champions,
+      earnings,
+      draftPick,
+      college: college ? college.name : null,
+    });
+    setRetired(true);
+    archiveCareer(summary).then(() => loadArchive().then(setPastCareers));
+  }
+
   function newCareer() {
     setPlayer(null);
     setLiveGame(null);
@@ -783,6 +836,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setContractHistory([]);
     setPlayoffs(null);
     setChampions([]);
+    setRetired(false);
   }
 
   function nextQuarter() {
@@ -845,6 +899,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     playoffs,
     champions,
     playPlayoffGame,
+    retired,
+    careerSummary,
+    pastCareers,
+    retire,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

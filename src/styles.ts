@@ -105,4 +105,8 @@ export const styles = StyleSheet.create({
   matchRow: { paddingVertical: 6, paddingHorizontal: 8, borderRadius: 8, marginBottom: 4 },
   matchTeam: { color: "#aaa", fontSize: 14, paddingVertical: 1 },
   matchWinner: { color: "#fff", fontWeight: "bold" },
+    verdictText: { fontSize: 28, fontWeight: "bold", marginVertical: 8 },
+  careerRow: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#262626" },
+  careerName: { color: "#fff", fontSize: 15, fontWeight: "bold" },
+  careerMeta: { color: "#888", fontSize: 12, marginTop: 2 },
 });
