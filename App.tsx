@@ -1,5 +1,7 @@
 import { View } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer, DarkTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { GameProvider, useGame } from "./src/store/GameContext";
@@ -15,13 +17,29 @@ import HomeScreen from "./src/screens/HomeScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import StatsScreen from "./src/screens/StatsScreen";
 import LeagueScreen from "./src/screens/LeagueScreen";
+import { colors } from "./src/theme";
 import { styles } from "./src/styles";
 
 const Tab = createBottomTabNavigator();
 
 const theme = {
   ...DarkTheme,
-  colors: { ...DarkTheme.colors, background: "#111", card: "#111" },
+  colors: {
+    ...DarkTheme.colors,
+    background: colors.bg,
+    card: colors.surface,
+    border: colors.border,
+  },
+};
+
+type IconName = keyof typeof Ionicons.glyphMap;
+
+// [icon when selected, icon when not selected]
+const ICONS: Record<string, [IconName, IconName]> = {
+  Home: ["home", "home-outline"],
+  Profile: ["person", "person-outline"],
+  Stats: ["stats-chart", "stats-chart-outline"],
+  League: ["trophy", "trophy-outline"],
 };
 
 function HomeTab() {
@@ -138,14 +156,26 @@ function Main() {
   return (
     <NavigationContainer theme={theme}>
       <Tab.Navigator
-        screenOptions={{
+        screenOptions={({ route }) => ({
           headerShown: false,
-          tabBarActiveTintColor: "#ff8c00",
-          tabBarInactiveTintColor: "#777",
-          tabBarStyle: { backgroundColor: "#111", borderTopColor: "#222" },
-          tabBarLabelStyle: { fontSize: 14, fontWeight: "bold" },
-          tabBarIcon: () => null,
-        }}
+          tabBarActiveTintColor: colors.accent,
+          tabBarInactiveTintColor: colors.textMute,
+          tabBarStyle: {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+          },
+          tabBarLabelStyle: { fontSize: 12, fontWeight: "700" },
+          tabBarIcon: ({ color, size, focused }) => {
+            const icons = ICONS[route.name] ?? ICONS.Home;
+            return (
+              <Ionicons
+                name={focused ? icons[0] : icons[1]}
+                size={size}
+                color={color}
+              />
+            );
+          },
+        })}
       >
         <Tab.Screen name="Home" component={HomeTab} />
         <Tab.Screen name="Profile" component={ProfileTab} />
@@ -158,8 +188,10 @@ function Main() {
 
 export default function App() {
   return (
-    <GameProvider>
-      <Main />
-    </GameProvider>
+    <SafeAreaProvider>
+      <GameProvider>
+        <Main />
+      </GameProvider>
+    </SafeAreaProvider>
   );
 }
