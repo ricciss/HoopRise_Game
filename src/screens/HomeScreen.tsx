@@ -1,3 +1,4 @@
+
 import { View, Text, Pressable } from "react-native";
 import { Ratings } from "../game/player";
 import { TRAIN_COST } from "../game/training";
@@ -8,7 +9,18 @@ import { useGame, LABELS } from "../store/GameContext";
 import GameCard from "../components/GameCard";
 import LiveGame from "../components/LiveGame";
 import EventCard from "../components/EventCard";
+import AnimatedBar from "../components/AnimatedBar";
+import PlayerBadge from "../components/PlayerBadge";
+import { colors } from "../theme";
 import { styles } from "../styles";
+
+
+// The energy bar turns orange and then red when you get tired
+function energyColor(energy: number): string {
+  if (energy >= 50) return colors.green;
+  if (energy >= 25) return colors.accent;
+  return colors.red;
+}
 
 export default function HomeScreen() {
   const {
@@ -60,32 +72,36 @@ export default function HomeScreen() {
 
   return (
     <View>
-      <Text style={styles.name}>{player.name}</Text>
-      <Text style={styles.sub}>
-        {player.position} · {player.age} years old · {player.heightCm} cm
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 22 }}>
+        <PlayerBadge name={player.name} position={player.position} />
+        <View style={{ flex: 1, marginLeft: 16 }}>
+          <Text style={styles.name}>{player.name}</Text>
+          <Text style={[styles.sub, { marginBottom: 0 }]}>
+            {player.position} · {player.age} years old · {player.heightCm} cm
+          </Text>
+        </View>
+      </View>
 
       <Text style={styles.weekText}>
         {level.name} · Season {season}
       </Text>
-      <Text style={styles.hint}>
-        Week {week}/{SEASON_WEEKS}
-      </Text>
+      <View style={styles.ratingRow}>
+        <Text style={styles.ratingLabel}>Week</Text>
+        <AnimatedBar
+          value={(week / SEASON_WEEKS) * 100}
+          color={colors.blueLight}
+        />
+        <Text style={styles.ratingValue}>
+          {week}/{SEASON_WEEKS}
+        </Text>
+      </View>
       <Text style={gameWeek ? styles.gameDay : styles.trainDay}>
         {gameWeek ? "Game day!" : "Training week"}
       </Text>
 
       <View style={styles.ratingRow}>
         <Text style={styles.ratingLabel}>Energy</Text>
-        <View style={styles.barBg}>
-          <View
-            style={[
-              styles.barFill,
-              styles.energyFill,
-              { width: `${energy}%` },
-            ]}
-          />
-        </View>
+        <AnimatedBar value={energy} color={energyColor(energy)} />
         <Text style={styles.ratingValue}>{energy}</Text>
       </View>
 
@@ -106,11 +122,7 @@ export default function HomeScreen() {
       {(Object.keys(player.ratings) as (keyof Ratings)[]).map((key) => (
         <View key={key} style={styles.ratingRow}>
           <Text style={styles.ratingLabel}>{LABELS[key]}</Text>
-          <View style={styles.barBg}>
-            <View
-              style={[styles.barFill, { width: `${player.ratings[key]}%` }]}
-            />
-          </View>
+          <AnimatedBar value={player.ratings[key]} />
           <Text style={styles.ratingValue}>{player.ratings[key]}</Text>
           {!gameWeek && !injury && (
             <Pressable
@@ -156,8 +168,16 @@ export default function HomeScreen() {
         </Pressable>
       )}
 
-      <Pressable style={styles.button} onPress={newCareer}>
-        <Text style={styles.buttonText}>New career (deletes save)</Text>
+      <Pressable
+        style={[
+          styles.button,
+          { backgroundColor: colors.surfaceAlt, marginTop: 40 },
+        ]}
+        onPress={newCareer}
+      >
+        <Text style={[styles.buttonText, { color: colors.textDim }]}>
+          New career (deletes save)
+        </Text>
       </Pressable>
     </View>
   );

@@ -1,16 +1,46 @@
-import { View, Text } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { GameResult } from "../game/simulation";
+import { colors } from "../theme";
 import { styles } from "../styles";
 
 export default function GameCard({ game }: { game: GameResult }) {
+  const accent = game.won ? colors.green : colors.red;
+
   return (
-    <View style={styles.gameCard}>
-      <Text style={styles.gameTitle}>
-        {game.won ? "WIN" : "LOSS"} vs {game.opponent}
-      </Text>
-      <Text style={styles.gameScore}>
-        {game.teamScore} - {game.opponentScore}
-      </Text>
+    <View style={[styles.gameCard, { borderColor: accent }]}>
+      <View style={local.header}>
+        <View
+          style={[
+            local.pill,
+            { backgroundColor: game.won ? colors.greenDark : colors.redDark },
+          ]}
+        >
+          <Text style={local.pillText}>{game.won ? "WIN" : "LOSS"}</Text>
+        </View>
+        <Text style={local.opponent} numberOfLines={1}>
+          vs {game.opponent}
+        </Text>
+      </View>
+
+      <View style={local.scoreRow}>
+        <Text
+          style={[
+            local.score,
+            { color: game.won ? colors.text : colors.textMute },
+          ]}
+        >
+          {game.teamScore}
+        </Text>
+        <Text style={local.dash}>:</Text>
+        <Text
+          style={[
+            local.score,
+            { color: game.won ? colors.textMute : colors.text },
+          ]}
+        >
+          {game.opponentScore}
+        </Text>
+      </View>
 
       {game.quarters && (
         <View>
@@ -85,3 +115,18 @@ export default function GameCard({ game }: { game: GameResult }) {
     </View>
   );
 }
+
+const local = StyleSheet.create({
+  header: { flexDirection: "row", alignItems: "center", gap: 10 },
+  pill: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8 },
+  pillText: { color: "#fff", fontSize: 12, fontWeight: "800", letterSpacing: 1 },
+  opponent: { flex: 1, color: colors.textDim, fontSize: 15, fontWeight: "700" },
+  scoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 10,
+  },
+  score: { fontSize: 46, fontWeight: "800", minWidth: 80, textAlign: "center" },
+  dash: { color: colors.textMute, fontSize: 36, fontWeight: "800", marginHorizontal: 6 },
+});

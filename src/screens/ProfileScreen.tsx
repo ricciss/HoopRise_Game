@@ -10,6 +10,8 @@ import {
 } from "../game/league";
 import { formatMoney } from "../game/market";
 import { useGame, LABELS } from "../store/GameContext";
+import AnimatedBar from "../components/AnimatedBar";
+import PlayerBadge from "../components/PlayerBadge";
 import { styles } from "../styles";
 
 export default function ProfileScreen() {
@@ -37,14 +39,20 @@ export default function ProfileScreen() {
 
   return (
     <View>
-      <Text style={styles.name}>{player.name}</Text>
-      <Text style={styles.sub}>
-        {player.position} · {player.age} years old · {player.heightCm} cm
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 22 }}>
+        <PlayerBadge name={player.name} position={player.position} size={72} />
+        <View style={{ flex: 1, marginLeft: 16 }}>
+          <Text style={styles.name}>{player.name}</Text>
+          <Text style={[styles.sub, { marginBottom: 0 }]}>
+            {player.position} · {player.age} years old · {player.heightCm} cm
+          </Text>
+        </View>
+      </View>
 
       <View style={styles.gameCard}>
         <Text style={styles.gameTitle}>OVERALL</Text>
         <Text style={styles.gameScore}>{overall}</Text>
+        <AnimatedBar value={overall} />
       </View>
 
       {champions.length > 0 && (
@@ -134,11 +142,7 @@ export default function ProfileScreen() {
       {keys.map((key) => (
         <View key={key} style={styles.ratingRow}>
           <Text style={styles.ratingLabel}>{LABELS[key]}</Text>
-          <View style={styles.barBg}>
-            <View
-              style={[styles.barFill, { width: `${player.ratings[key]}%` }]}
-            />
-          </View>
+          <AnimatedBar value={player.ratings[key]} />
           <Text style={styles.ratingValue}>{player.ratings[key]}</Text>
         </View>
       ))}
