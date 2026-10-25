@@ -36,6 +36,8 @@ import {
   findEvent,
   applyEffect,
   describeEffect,
+  resolveChoice,
+  choiceCost,
 } from "../game/events";
 import {
   Injury,
@@ -200,6 +202,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   );
   const [liveGame, setLiveGame] = useState<LiveGameState | null>(null);
   const [event, setEvent] = useState<GameEvent | null>(null);
+  const [lastEventId, setLastEventId] = useState<string | null>(null);
   const [injury, setInjury] = useState<Injury | null>(null);
   const [college, setCollege] = useState<College | null>(null);
   const [offers, setOffers] = useState<College[] | null>(null);
@@ -470,7 +473,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setWeek(nextWeek);
       // Random events only happen in training weeks
       if (!isGameWeek(nextWeek)) {
-        setEvent(rollEvent());
+        const next = rollEvent(level.id, lastEventId);
+        setEvent(next);
+        if (next) setLastEventId(next.id);
       }
     }
   }
@@ -502,6 +507,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setSeasonSummary(null);
     setLiveGame(null);
     setEvent(null);
+    setLastEventId(null);
     setInjury(null);
     setCollege(null);
     setOffers(null);
@@ -665,10 +671,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (!player || !event) return;
     const choice = event.choices[index];
     if (!choice) return;
-    const result = applyEffect(player, energy, choice.effect);
+
+    // Some choices cost money
+    if (choiceCost(choice) > earnings) {
+      setMessage("Not enough career earnings for that.");
+      return;
+    }
+
+    const outcome = resolveChoice(choice);
+    const result = applyEffect(player, energy, outcome.effect);
     setPlayer(result.player);
     setEnergy(result.energy);
-    setMessage(`${choice.result} (${describeEffect(choice.effect)})`);
+    if (result.money !== 0) {
+      setEarnings((e) => Math.max(0, e + result.money));
+    }
+    setMessage(`${outcome.text} (${describeEffect(outcome.effect)})`);
     setEvent(null);
   }
 
@@ -821,6 +838,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setPlayer(null);
     setLiveGame(null);
     setEvent(null);
+    setLastEventId(null);
     setInjury(null);
     setCollege(null);
     setOffers(null);
