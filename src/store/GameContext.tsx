@@ -108,6 +108,7 @@ import {
   loadChampions,
 } from "../storage";
 import { ArchivedCareer, archiveCareer, loadArchive } from "../archiveStorage";
+import { COIN_SEASON, COIN_TITLE, gameCoins } from "../game/coins";
 
 // Playoff opponents play as if they were this much stronger
 const PLAYOFF_INTENSITY = 15;
@@ -166,6 +167,7 @@ interface GameState {
   finishDraft: () => void;
   contract: Contract | null;
   earnings: number;
+  coins: number;
   contractOffers: ContractOffer[] | null;
   contractHistory: ContractRecord[];
   openContractOffers: () => void;
@@ -213,6 +215,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [draft, setDraft] = useState<DraftResult | null>(null);
   const [contract, setContract] = useState<Contract | null>(null);
   const [earnings, setEarnings] = useState(0);
+  const [coins, setCoins] = useState(0);
   const [contractOffers, setContractOffers] = useState<
     ContractOffer[] | null
   >(null);
@@ -287,6 +290,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setDraft(data.draft ?? null);
         setContract(data.contract ?? null);
         setEarnings(data.earnings ?? 0);
+        setCoins(data.coins ?? 0);
         setContractOffers(data.contractOffers ?? null);
         setContractHistory(contracts);
         setPlayoffs(data.playoffs ?? null);
@@ -334,6 +338,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         draft,
         contract,
         earnings,
+        coins,
         contractOffers,
         standings,
         playoffs,
@@ -360,6 +365,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     draft,
     contract,
     earnings,
+    coins,
     contractOffers,
     standings,
     playoffs,
@@ -418,6 +424,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setSeasonStats(nextStats);
     if (week >= SEASON_WEEKS) {
       const summary = summarize(season, current.age, nextStats);
+      setCoins((c) => c + COIN_SEASON);
 
       // Pros get paid at the end of every season, and the contract shortens
       if (level.id === "pro" && contract) {
@@ -491,6 +498,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setDraft(null);
     setContract(null);
     setEarnings(0);
+    setCoins(0);
     setContractOffers(null);
     setContractHistory([]);
     setPlayoffs(null);
@@ -572,7 +580,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     const table = updateStandings(opponentTeam, result.won);
     setEnergy(Math.max(0, energy - GAME_COST));
-    setMessage(text);
+    const reward = gameCoins(result.won);
+    setCoins((c) => c + reward);
+    setMessage(`${text} +${reward} coins`);
     advance(addGame(seasonStats, result), player, table);
   }
 
@@ -622,7 +632,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
 
     const table = updateStandings(opponentTeam, result.won);
-    setMessage(text);
+    const reward = gameCoins(result.won);
+    setCoins((c) => c + reward);
+    setMessage(`${text} +${reward} coins`);
     advance(addGame(seasonStats, result), player, table);
   }
 
@@ -664,7 +676,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
           ? "You are the champions!"
           : `${roundName}: your season ends here.`;
     }
-    setMessage(text);
+    let reward = gameCoins(result.won);
+    if (!next.active && next.champion === next.userTeamId) {
+      reward += COIN_TITLE;
+    }
+    setCoins((c) => c + reward);
+    setMessage(`${text} +${reward} coins`);
   }
 
   function chooseEvent(index: number) {
@@ -850,6 +867,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setDraft(null);
     setContract(null);
     setEarnings(0);
+    setCoins(0);
     setContractOffers(null);
     setContractHistory([]);
     setPlayoffs(null);
@@ -909,6 +927,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     finishDraft,
     contract,
     earnings,
+    coins,
     contractOffers,
     contractHistory,
     openContractOffers,

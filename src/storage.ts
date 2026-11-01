@@ -30,6 +30,7 @@ export interface SaveData {
   standings?: StandingRow[]; // league table of the current season
   playoffs?: Playoffs | null; // playoffs of the current season
   retired?: boolean; // the career is over
+  coins?: number; // shop currency, earned by playing
 }
 
 // One finished season (a row in the season_history table)

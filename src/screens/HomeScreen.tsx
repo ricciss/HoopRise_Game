@@ -29,6 +29,7 @@ export default function HomeScreen() {
     season,
     level,
     energy,
+    coins,
     message,
     lastGame,
     liveGame,
@@ -80,6 +81,21 @@ export default function HomeScreen() {
             {player.position} · {player.age} years old · {player.heightCm} cm
           </Text>
         </View>
+      </View>
+
+      <View
+        style={{
+          alignSelf: "flex-start",
+          backgroundColor: colors.accentSoft,
+          borderRadius: 999,
+          paddingHorizontal: 14,
+          paddingVertical: 6,
+          marginBottom: 16,
+        }}
+      >
+        <Text style={{ color: colors.gold, fontWeight: "700" }}>
+          {coins} coins
+        </Text>
       </View>
 
       <Text style={styles.weekText}>
