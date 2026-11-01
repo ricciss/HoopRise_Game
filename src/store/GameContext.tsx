@@ -109,6 +109,14 @@ import {
 } from "../storage";
 import { ArchivedCareer, archiveCareer, loadArchive } from "../archiveStorage";
 import { COIN_SEASON, COIN_TITLE, gameCoins } from "../game/coins";
+import {
+  ItemId,
+  findItem,
+  buyBlockReason,
+  AD_REWARD,
+  ENERGY_DRINK_GAIN,
+  PHYSIO_POINTS,
+} from "../game/shop";
 
 // Playoff opponents play as if they were this much stronger
 const PLAYOFF_INTENSITY = 15;
@@ -168,6 +176,8 @@ interface GameState {
   contract: Contract | null;
   earnings: number;
   coins: number;
+  buyItem: (id: ItemId) => string;
+  claimAdReward: () => string;
   contractOffers: ContractOffer[] | null;
   contractHistory: ContractRecord[];
   openContractOffers: () => void;
@@ -851,6 +861,34 @@ export function GameProvider({ children }: { children: ReactNode }) {
     archiveCareer(summary).then(() => loadArchive().then(setPastCareers));
   }
 
+  // Buys a shop item with coins. Returns a message for the shop screen.
+  function buyItem(id: ItemId): string {
+    const item = findItem(id);
+    if (!player || !item) return "";
+    const reason = buyBlockReason(
+      item,
+      coins,
+      energy,
+      MAX_ENERGY,
+      injury !== null
+    );
+    if (reason) return reason;
+
+    if (id === "energy") {
+      setEnergy(Math.min(MAX_ENERGY, energy + ENERGY_DRINK_GAIN));
+    } else if (id === "physio" && injury) {
+      setInjury(tickInjury(injury, PHYSIO_POINTS));
+    }
+    setCoins((c) => c - item.price);
+    return `Bought: ${item.name}.`;
+  }
+
+  // Called when a (test) ad has been watched to the end
+  function claimAdReward(): string {
+    setCoins((c) => c + AD_REWARD);
+    return `Thanks for watching! +${AD_REWARD} coins.`;
+  }
+
   function newCareer() {
     setPlayer(null);
     setLiveGame(null);
@@ -928,6 +966,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     contract,
     earnings,
     coins,
+    buyItem,
+    claimAdReward,
     contractOffers,
     contractHistory,
     openContractOffers,

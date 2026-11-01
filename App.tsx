@@ -17,6 +17,7 @@ import HomeScreen from "./src/screens/HomeScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import StatsScreen from "./src/screens/StatsScreen";
 import LeagueScreen from "./src/screens/LeagueScreen";
+import ShopScreen from "./src/screens/ShopScreen";
 import { colors } from "./src/theme";
 import { styles } from "./src/styles";
 
@@ -40,6 +41,7 @@ const ICONS: Record<string, [IconName, IconName]> = {
   Profile: ["person", "person-outline"],
   Stats: ["stats-chart", "stats-chart-outline"],
   League: ["trophy", "trophy-outline"],
+  Shop: ["cart", "cart-outline"],
 };
 
 function HomeTab() {
@@ -70,6 +72,14 @@ function LeagueTab() {
   return (
     <Screen>
       <LeagueScreen />
+    </Screen>
+  );
+}
+
+function ShopTab() {
+  return (
+    <Screen>
+      <ShopScreen />
     </Screen>
   );
 }
@@ -181,6 +191,7 @@ function Main() {
         <Tab.Screen name="Profile" component={ProfileTab} />
         <Tab.Screen name="Stats" component={StatsTab} />
         <Tab.Screen name="League" component={LeagueTab} />
+        <Tab.Screen name="Shop" component={ShopTab} />
       </Tab.Navigator>
     </NavigationContainer>
   );
