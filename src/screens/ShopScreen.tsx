@@ -1,13 +1,21 @@
 import { useState, useEffect } from "react";
-import { View, Text, Pressable } from "react-native";
-import { ITEMS, buyBlockReason, AD_SECONDS, AD_REWARD } from "../game/shop";
+import { View, Text, Pressable, Alert } from "react-native";
+import {
+  ITEMS,
+  PACKS,
+  CoinPack,
+  buyBlockReason,
+  AD_SECONDS,
+  AD_REWARD,
+} from "../game/shop";
 import { MAX_ENERGY } from "../game/training";
 import { useGame } from "../store/GameContext";
 import { colors } from "../theme";
 import { styles } from "../styles";
 
 export default function ShopScreen() {
-  const { player, coins, energy, injury, buyItem, claimAdReward } = useGame();
+  const { player, coins, energy, injury, buyItem, claimAdReward, buyPack } =
+    useGame();
   // The result of the last purchase attempt
   const [note, setNote] = useState("");
   // Seconds left of the test ad, or null when no ad is playing
@@ -23,6 +31,18 @@ export default function ShopScreen() {
     const timer = setTimeout(() => setAdLeft(adLeft - 1), 1000);
     return () => clearTimeout(timer);
   }, [adLeft]);
+
+  // Asks for confirmation first, like a real store would
+  function confirmPack(pack: CoinPack) {
+    Alert.alert(
+      "Test purchase",
+      `${pack.name}: ${pack.coins} coins for ${pack.price}.\n\nTest mode: no real money is charged.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Buy", onPress: () => setNote(buyPack(pack.id)) },
+      ]
+    );
+  }
 
   if (!player) return null;
 
@@ -69,6 +89,24 @@ export default function ShopScreen() {
               : `Ad playing... ${adLeft}`}
           </Text>
         </Pressable>
+      </View>
+
+      <View style={styles.gameCard}>
+        <Text style={styles.gameTitle}>COIN PACKS (TEST MODE)</Text>
+        <Text style={styles.highlightText}>
+          Prices are for show only. Nothing is charged.
+        </Text>
+        {PACKS.map((pack) => (
+          <Pressable
+            key={pack.id}
+            style={[styles.button, { marginTop: 12 }]}
+            onPress={() => confirmPack(pack)}
+          >
+            <Text style={styles.buttonText}>
+              {pack.name} · {pack.coins} coins · {pack.price}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       {ITEMS.map((item) => {

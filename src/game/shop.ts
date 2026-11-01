@@ -31,6 +31,24 @@ export const ITEMS: ShopItem[] = [
   },
 ];
 
+// Coin packs. Test mode: no real money is charged.
+export interface CoinPack {
+  id: string;
+  name: string;
+  coins: number;
+  price: string; // shown as text only
+}
+
+export const PACKS: CoinPack[] = [
+  { id: "small", name: "Pocket change", coins: 100, price: "€0.99" },
+  { id: "medium", name: "Gym bag", coins: 300, price: "€2.49" },
+  { id: "large", name: "Trophy case", coins: 800, price: "€5.99" },
+];
+
+export function findPack(id: string): CoinPack | null {
+  return PACKS.find((p) => p.id === id) ?? null;
+}
+
 export function findItem(id: ItemId): ShopItem | null {
   return ITEMS.find((i) => i.id === id) ?? null;
 }

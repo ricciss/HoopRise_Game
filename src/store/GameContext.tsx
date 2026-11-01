@@ -113,6 +113,7 @@ import {
   ItemId,
   findItem,
   buyBlockReason,
+  findPack,
   AD_REWARD,
   ENERGY_DRINK_GAIN,
   PHYSIO_POINTS,
@@ -178,6 +179,7 @@ interface GameState {
   coins: number;
   buyItem: (id: ItemId) => string;
   claimAdReward: () => string;
+  buyPack: (id: string) => string;
   contractOffers: ContractOffer[] | null;
   contractHistory: ContractRecord[];
   openContractOffers: () => void;
@@ -889,6 +891,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return `Thanks for watching! +${AD_REWARD} coins.`;
   }
 
+  // Test purchase of a coin pack (no real payment happens)
+  function buyPack(id: string): string {
+    const pack = findPack(id);
+    if (!pack) return "";
+    setCoins((c) => c + pack.coins);
+    return `Test purchase complete: +${pack.coins} coins.`;
+  }
+
   function newCareer() {
     setPlayer(null);
     setLiveGame(null);
@@ -968,6 +978,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     coins,
     buyItem,
     claimAdReward,
+    buyPack,
     contractOffers,
     contractHistory,
     openContractOffers,
