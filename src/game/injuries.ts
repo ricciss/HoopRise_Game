@@ -38,8 +38,12 @@ export function injuryChance(energy: number): number {
   return BASE_INJURY_CHANCE;
 }
 
-export function rollInjury(energy: number): Injury | null {
-  if (Math.random() >= injuryChance(energy)) return null;
+// chanceScale: 1 normally, lower with a team doctor
+export function rollInjury(
+  energy: number,
+  chanceScale: number = 1
+): Injury | null {
+  if (Math.random() >= injuryChance(energy) * chanceScale) return null;
 
   const roll = Math.random();
   const severity: Severity =

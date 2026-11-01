@@ -9,13 +9,26 @@ import {
   AD_REWARD,
 } from "../game/shop";
 import { MAX_ENERGY } from "../game/training";
+import { SERVICES, servicePrice, serviceBlockReason } from "../game/services";
+import { formatMoney } from "../game/market";
 import { useGame } from "../store/GameContext";
 import { colors } from "../theme";
 import { styles } from "../styles";
 
 export default function ShopScreen() {
-  const { player, coins, energy, injury, buyItem, claimAdReward, buyPack } =
-    useGame();
+  const {
+    player,
+    coins,
+    energy,
+    injury,
+    buyItem,
+    claimAdReward,
+    buyPack,
+    earnings,
+    contract,
+    perks,
+    buyService,
+  } = useGame();
   // The result of the last purchase attempt
   const [note, setNote] = useState("");
   // Seconds left of the test ad, or null when no ad is playing
@@ -107,6 +120,37 @@ export default function ShopScreen() {
             </Text>
           </Pressable>
         ))}
+      </View>
+
+      <View style={styles.gameCard}>
+        <Text style={styles.gameTitle}>CAREER SERVICES</Text>
+        <Text style={styles.highlightText}>
+          Paid with career earnings: {formatMoney(earnings)}
+        </Text>
+        {SERVICES.map((service) => {
+          const salary = contract ? contract.salary : null;
+          const reason = serviceBlockReason(service, perks, earnings, salary);
+          return (
+            <View key={service.id} style={{ marginTop: 14 }}>
+              <Text style={{ color: colors.text, fontWeight: "700" }}>
+                {service.name}
+                {perks[service.id] ? " · active" : ""}
+              </Text>
+              <Text style={styles.highlightText}>{service.description}</Text>
+              <Pressable
+                style={[styles.button, { marginTop: 8 }, reason !== null && { opacity: 0.4 }]}
+                onPress={() => setNote(buyService(service.id))}
+              >
+                <Text style={styles.buttonText}>
+                  {salary === null
+                    ? "Pros only"
+                    : `Hire for ${formatMoney(servicePrice(service, salary))}`}
+                </Text>
+              </Pressable>
+              {reason && <Text style={styles.hint}>{reason}</Text>}
+            </View>
+          );
+        })}
       </View>
 
       {ITEMS.map((item) => {

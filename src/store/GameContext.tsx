@@ -118,6 +118,18 @@ import {
   ENERGY_DRINK_GAIN,
   PHYSIO_POINTS,
 } from "../game/shop";
+import {
+  Perks,
+  NO_PERKS,
+  ServiceId,
+  findService,
+  servicePrice,
+  serviceBlockReason,
+  applyAgent,
+  payFor,
+  TRAINER_DEV,
+  DOCTOR_SCALE,
+} from "../game/services";
 
 // Playoff opponents play as if they were this much stronger
 const PLAYOFF_INTENSITY = 15;
@@ -180,6 +192,8 @@ interface GameState {
   buyItem: (id: ItemId) => string;
   claimAdReward: () => string;
   buyPack: (id: string) => string;
+  perks: Perks;
+  buyService: (id: ServiceId) => string;
   contractOffers: ContractOffer[] | null;
   contractHistory: ContractRecord[];
   openContractOffers: () => void;
@@ -228,6 +242,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [contract, setContract] = useState<Contract | null>(null);
   const [earnings, setEarnings] = useState(0);
   const [coins, setCoins] = useState(0);
+  const [perks, setPerks] = useState<Perks>(NO_PERKS);
   const [contractOffers, setContractOffers] = useState<
     ContractOffer[] | null
   >(null);
@@ -303,6 +318,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setContract(data.contract ?? null);
         setEarnings(data.earnings ?? 0);
         setCoins(data.coins ?? 0);
+        setPerks(data.perks ?? NO_PERKS);
         setContractOffers(data.contractOffers ?? null);
         setContractHistory(contracts);
         setPlayoffs(data.playoffs ?? null);
@@ -351,6 +367,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         contract,
         earnings,
         coins,
+        perks,
         contractOffers,
         standings,
         playoffs,
@@ -378,6 +395,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     contract,
     earnings,
     coins,
+    perks,
     contractOffers,
     standings,
     playoffs,
@@ -511,6 +529,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setContract(null);
     setEarnings(0);
     setCoins(0);
+    setPerks(NO_PERKS);
     setContractOffers(null);
     setContractHistory([]);
     setPlayoffs(null);
@@ -548,7 +567,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
       player,
       stat,
       energy,
-      activeCollege ? activeCollege.development : 0
+      activeCollege
+        ? activeCollege.development
+        : perks.trainer
+        ? TRAINER_DEV
+        : 0
     );
     setPlayer(result.player);
     setEnergy(result.energy);
@@ -584,7 +607,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setLiveGame({ game: result, shown: 0 });
 
     let text = result.won ? "Victory!" : "Tough loss.";
-    const hurt = rollInjury(energy);
+    const hurt = rollInjury(energy, perks.doctor ? DOCTOR_SCALE : 1);
     if (hurt) {
       setInjury(hurt);
       text += ` Injury: ${describeInjury(hurt)}`;
@@ -732,6 +755,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setEvent(null);
     setInjury(null);
     setPlayoffs(null);
+    setPerks((p) => ({ ...p, trainer: false, doctor: false }));
 
     // Teams get stronger or weaker over time, and the table starts again
     if (teams.length > 0) {
@@ -816,7 +840,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   function openContractOffers() {
     if (!player) return;
     const ppg = seasonSummary ? seasonSummary.ppg : 15;
-    setContractOffers(generateContractOffers(player, ppg, teams, teamId));
+    const offers = generateContractOffers(player, ppg, teams, teamId);
+    setContractOffers(perks.agent ? applyAgent(offers) : offers);
+    setPerks((p) => ({ ...p, agent: false }));
   }
 
   function chooseContract(index: number) {
@@ -885,6 +911,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return `Bought: ${item.name}.`;
   }
 
+  // Buys a service with career earnings. Returns a message for the shop.
+  function buyService(id: ServiceId): string {
+    const service = findService(id);
+    if (!player || !service) return "";
+    const salary = contract ? contract.salary : null;
+    const reason = serviceBlockReason(service, perks, earnings, salary);
+    if (reason || salary === null) return reason ?? "";
+
+    setEarnings(payFor(earnings, servicePrice(service, salary)));
+    setPerks((p) => ({ ...p, [id]: true }));
+    return `Hired: ${service.name}.`;
+  }
+
   // Called when a (test) ad has been watched to the end
   function claimAdReward(): string {
     setCoins((c) => c + AD_REWARD);
@@ -916,6 +955,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setContract(null);
     setEarnings(0);
     setCoins(0);
+    setPerks(NO_PERKS);
     setContractOffers(null);
     setContractHistory([]);
     setPlayoffs(null);
@@ -979,6 +1019,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     buyItem,
     claimAdReward,
     buyPack,
+    perks,
+    buyService,
     contractOffers,
     contractHistory,
     openContractOffers,

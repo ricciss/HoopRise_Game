@@ -7,6 +7,7 @@ import { Team, DraftPickEntry, DraftResult } from "./game/league";
 import { Contract, ContractOffer } from "./game/market";
 import { StandingRow, RankedRow } from "./game/standings";
 import { Playoffs } from "./game/playoffs";
+import { Perks } from "./game/services";
 
 export interface SaveData {
   player: Player;
@@ -31,6 +32,7 @@ export interface SaveData {
   playoffs?: Playoffs | null; // playoffs of the current season
   retired?: boolean; // the career is over
   coins?: number; // shop currency, earned by playing
+  perks?: Perks; // bought services (trainer, doctor, agent)
 }
 
 // One finished season (a row in the season_history table)
