@@ -7,6 +7,7 @@ import { GameProvider, useGame } from "./src/store/GameContext";
 import Screen from "./src/components/Screen";
 import SplashScreen from "./src/components/SplashScreen";
 import AchievementToast from "./src/components/AchievementToast";
+import { loadFeedbackSettings } from "./src/feedback";
 import CreatePlayerScreen from "./src/screens/CreatePlayerScreen";
 import SeasonSummaryScreen from "./src/screens/SeasonSummaryScreen";
 import CollegeOffersScreen from "./src/screens/CollegeOffersScreen";
@@ -102,6 +103,7 @@ function Main() {
   const [splashDone, setSplashDone] = useState(false);
 
   useEffect(() => {
+    loadFeedbackSettings();
     const timer = setTimeout(() => setSplashDone(true), SPLASH_MS);
     return () => clearTimeout(timer);
   }, []);

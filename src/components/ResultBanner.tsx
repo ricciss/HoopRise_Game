@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Animated, Easing, Text } from "react-native";
 import { colors } from "../theme";
+import { feedback } from "../feedback";
 
 // The big VICTORY / DEFEAT text that slams onto the screen
 export default function ResultBanner({
@@ -15,6 +16,8 @@ export default function ResultBanner({
   const shake = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (won) feedback.win();
+    else feedback.lose();
     const slamIn = Animated.spring(slam, {
       toValue: 1,
       friction: 5,

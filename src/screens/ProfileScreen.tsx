@@ -1,4 +1,5 @@
-import { View, Text } from "react-native";
+import { useState } from "react";
+import { View, Text, Switch } from "react-native";
 import { Ratings } from "../game/player";
 import { perkLines } from "../game/colleges";
 import {
@@ -14,6 +15,12 @@ import { useGame, LABELS } from "../store/GameContext";
 import AnimatedBar from "../components/AnimatedBar";
 import PlayerBadge from "../components/PlayerBadge";
 import { colors } from "../theme";
+import {
+  feedback,
+  getFeedbackSettings,
+  setSoundOn,
+  setHapticsOn,
+} from "../feedback";
 import { styles } from "../styles";
 
 export default function ProfileScreen() {
@@ -30,6 +37,8 @@ export default function ProfileScreen() {
     champions,
     achievements,
   } = useGame();
+  const [sound, setSound] = useState(getFeedbackSettings().soundOn);
+  const [haptics, setHaptics] = useState(getFeedbackSettings().hapticsOn);
   if (!player) return null;
 
   const keys = Object.keys(player.ratings) as (keyof Ratings)[];
@@ -172,6 +181,54 @@ export default function ProfileScreen() {
           <Text style={styles.ratingValue}>{player.ratings[key]}</Text>
         </View>
       ))}
+
+      <View style={[styles.gameCard, { marginTop: 10 }]}>
+        <Text style={styles.gameTitle}>SETTINGS</Text>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 12,
+          }}
+        >
+          <Text style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+            Sound effects
+          </Text>
+          <Switch
+            value={sound}
+            onValueChange={(on) => {
+              setSound(on);
+              setSoundOn(on);
+              if (on) feedback.tap();
+            }}
+            trackColor={{ false: colors.surfaceAlt, true: colors.green }}
+            thumbColor="#ffffff"
+          />
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 12,
+          }}
+        >
+          <Text style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+            Vibration
+          </Text>
+          <Switch
+            value={haptics}
+            onValueChange={(on) => {
+              setHaptics(on);
+              setHapticsOn(on);
+              if (on) feedback.tap();
+            }}
+            trackColor={{ false: colors.surfaceAlt, true: colors.green }}
+            thumbColor="#ffffff"
+          />
+        </View>
+      </View>
     </View>
   );
 }

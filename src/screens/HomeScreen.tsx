@@ -13,6 +13,7 @@ import AnimatedBar from "../components/AnimatedBar";
 import PlayerBadge from "../components/PlayerBadge";
 import ArcadeButton from "../components/ArcadeButton";
 import { colors } from "../theme";
+import { feedback } from "../feedback";
 import { styles } from "../styles";
 
 
@@ -147,7 +148,10 @@ export default function HomeScreen() {
                 styles.trainButton,
                 energy < TRAIN_COST && styles.trainButtonDisabled,
               ]}
-              onPress={() => trainStat(key)}
+              onPress={() => {
+                feedback.tap();
+                trainStat(key);
+              }}
             >
               <Text style={styles.trainButtonText}>Train</Text>
             </Pressable>

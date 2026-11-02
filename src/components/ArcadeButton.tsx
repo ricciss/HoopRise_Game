@@ -8,6 +8,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { colors, radius } from "../theme";
+import { feedback } from "../feedback";
 
 export type ArcadeColor = "orange" | "green" | "blue" | "red" | "gray";
 
@@ -53,7 +54,10 @@ export default function ArcadeButton({
   return (
     <Pressable
       disabled={disabled}
-      onPressIn={() => moveTo(1)}
+      onPressIn={() => {
+        feedback.tap();
+        moveTo(1);
+      }}
       onPressOut={() => moveTo(0)}
       onPress={onPress}
       style={[{ marginTop: 20 }, style]}

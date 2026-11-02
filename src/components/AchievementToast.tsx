@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useGame } from "../store/GameContext";
 import { colors } from "../theme";
+import { feedback } from "../feedback";
 
 const HIDDEN = -170; // above the screen
 const SHOW_MS = 3200;
@@ -20,6 +21,7 @@ export default function AchievementToast() {
 
   useEffect(() => {
     if (!toast) return;
+    feedback.unlock();
     slide.setValue(HIDDEN);
     shine.setValue(0);
 

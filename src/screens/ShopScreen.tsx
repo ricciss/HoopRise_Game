@@ -14,6 +14,7 @@ import { SERVICES, servicePrice, serviceBlockReason } from "../game/services";
 import { formatMoney } from "../game/market";
 import { useGame } from "../store/GameContext";
 import { colors } from "../theme";
+import { feedback } from "../feedback";
 import { styles } from "../styles";
 
 export default function ShopScreen() {
@@ -38,13 +39,19 @@ export default function ShopScreen() {
   useEffect(() => {
     if (adLeft === null) return;
     if (adLeft <= 0) {
-      setNote(claimAdReward());
+      afterPurchase(claimAdReward());
       setAdLeft(null);
       return;
     }
     const timer = setTimeout(() => setAdLeft(adLeft - 1), 1000);
     return () => clearTimeout(timer);
   }, [adLeft]);
+
+  // Shows the result of a purchase and plays the coin sound when it worked
+  function afterPurchase(message: string) {
+    setNote(message);
+    if (/^(Bought|Hired|Test purchase|Thanks)/.test(message)) feedback.coin();
+  }
 
   // Asks for confirmation first, like a real store would
   function confirmPack(pack: CoinPack) {
@@ -53,7 +60,7 @@ export default function ShopScreen() {
       `${pack.name}: ${pack.coins} coins for ${pack.price}.\n\nTest mode: no real money is charged.`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Buy", onPress: () => setNote(buyPack(pack.id)) },
+        { text: "Buy", onPress: () => afterPurchase(buyPack(pack.id)) },
       ]
     );
   }
@@ -144,7 +151,7 @@ export default function ShopScreen() {
                 }
                 color="orange"
                 dimmed={reason !== null}
-                onPress={() => setNote(buyService(service.id))}
+                onPress={() => afterPurchase(buyService(service.id))}
                 style={{ marginTop: 10 }}
               />
               {reason && <Text style={styles.hint}>{reason}</Text>}
@@ -169,7 +176,7 @@ export default function ShopScreen() {
               label={`Buy for ${item.price} coins`}
               color="green"
               dimmed={reason !== null}
-              onPress={() => setNote(buyItem(item.id))}
+              onPress={() => afterPurchase(buyItem(item.id))}
             />
             {reason && <Text style={styles.hint}>{reason}</Text>}
           </View>
