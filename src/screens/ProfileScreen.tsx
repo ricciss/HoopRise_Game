@@ -9,9 +9,11 @@ import {
   trust,
 } from "../game/league";
 import { formatMoney } from "../game/market";
+import { ACHIEVEMENTS } from "../game/achievements";
 import { useGame, LABELS } from "../store/GameContext";
 import AnimatedBar from "../components/AnimatedBar";
 import PlayerBadge from "../components/PlayerBadge";
+import { colors } from "../theme";
 import { styles } from "../styles";
 
 export default function ProfileScreen() {
@@ -26,6 +28,7 @@ export default function ProfileScreen() {
     earnings,
     contractHistory,
     champions,
+    achievements,
   } = useGame();
   if (!player) return null;
 
@@ -71,6 +74,29 @@ export default function ProfileScreen() {
           ))}
         </View>
       )}
+
+      <View style={styles.gameCard}>
+        <Text style={styles.gameTitle}>
+          ACHIEVEMENTS · {achievements.length}/{ACHIEVEMENTS.length}
+        </Text>
+        {ACHIEVEMENTS.map((a) => {
+          const done = achievements.includes(a.id);
+          return (
+            <View key={a.id} style={{ marginTop: 10, opacity: done ? 1 : 0.5 }}>
+              <Text
+                style={{
+                  color: done ? colors.gold : colors.textDim,
+                  fontWeight: "700",
+                }}
+              >
+                {done ? "★ " : "○ "}
+                {a.name}
+              </Text>
+              <Text style={styles.highlightText}>{a.description}</Text>
+            </View>
+          );
+        })}
+      </View>
 
       {team && (
         <View style={styles.gameCard}>

@@ -33,6 +33,7 @@ export interface SaveData {
   retired?: boolean; // the career is over
   coins?: number; // shop currency, earned by playing
   perks?: Perks; // bought services (trainer, doctor, agent)
+  achievements?: string[]; // ids of unlocked achievements
 }
 
 // One finished season (a row in the season_history table)

@@ -130,6 +130,7 @@ import {
   TRAINER_DEV,
   DOCTOR_SCALE,
 } from "../game/services";
+import { newlyUnlocked, overallOf } from "../game/achievements";
 
 // Playoff opponents play as if they were this much stronger
 const PLAYOFF_INTENSITY = 15;
@@ -192,6 +193,7 @@ interface GameState {
   buyItem: (id: ItemId) => string;
   claimAdReward: () => string;
   buyPack: (id: string) => string;
+  achievements: string[];
   perks: Perks;
   buyService: (id: ServiceId) => string;
   contractOffers: ContractOffer[] | null;
@@ -243,6 +245,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [earnings, setEarnings] = useState(0);
   const [coins, setCoins] = useState(0);
   const [perks, setPerks] = useState<Perks>(NO_PERKS);
+  const [achievements, setAchievements] = useState<string[]>([]);
   const [contractOffers, setContractOffers] = useState<
     ContractOffer[] | null
   >(null);
@@ -319,6 +322,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setEarnings(data.earnings ?? 0);
         setCoins(data.coins ?? 0);
         setPerks(data.perks ?? NO_PERKS);
+        setAchievements(data.achievements ?? []);
         setContractOffers(data.contractOffers ?? null);
         setContractHistory(contracts);
         setPlayoffs(data.playoffs ?? null);
@@ -368,6 +372,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         earnings,
         coins,
         perks,
+        achievements,
         contractOffers,
         standings,
         playoffs,
@@ -396,11 +401,35 @@ export function GameProvider({ children }: { children: ReactNode }) {
     earnings,
     coins,
     perks,
+    achievements,
     contractOffers,
     standings,
     playoffs,
     retired,
   ]);
+
+  // Unlocks achievements whenever the data they depend on changes
+  useEffect(() => {
+    if (!loaded || !player) return;
+    const fresh = newlyUnlocked(
+      {
+        lastGame,
+        history,
+        champions,
+        overall: overallOf(player.ratings),
+        earnings,
+      },
+      achievements
+    );
+    if (fresh.length === 0) return;
+    const ids = fresh.map((a) => a.id);
+    setAchievements((a) => [...a, ...ids.filter((id) => !a.includes(id))]);
+    const text =
+      fresh.length <= 3
+        ? `Achievement unlocked: ${fresh.map((a) => a.name).join(", ")}!`
+        : `${fresh.length} achievements unlocked!`;
+    setMessage((m) => (m ? `${m} ${text}` : text));
+  }, [loaded, player, lastGame, history, champions, earnings]);
 
   // Picks the league team you play this week (pros only)
   function leagueOpponent(): Team | null {
@@ -530,6 +559,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setEarnings(0);
     setCoins(0);
     setPerks(NO_PERKS);
+    setAchievements([]);
     setContractOffers(null);
     setContractHistory([]);
     setPlayoffs(null);
@@ -956,6 +986,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setEarnings(0);
     setCoins(0);
     setPerks(NO_PERKS);
+    setAchievements([]);
     setContractOffers(null);
     setContractHistory([]);
     setPlayoffs(null);
@@ -1019,6 +1050,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     buyItem,
     claimAdReward,
     buyPack,
+    achievements,
     perks,
     buyService,
     contractOffers,
