@@ -1,11 +1,11 @@
-import { View } from "react-native";
-import { StatusBar } from "expo-status-bar";
+import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer, DarkTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { GameProvider, useGame } from "./src/store/GameContext";
 import Screen from "./src/components/Screen";
+import SplashScreen from "./src/components/SplashScreen";
 import CreatePlayerScreen from "./src/screens/CreatePlayerScreen";
 import SeasonSummaryScreen from "./src/screens/SeasonSummaryScreen";
 import CollegeOffersScreen from "./src/screens/CollegeOffersScreen";
@@ -19,9 +19,11 @@ import StatsScreen from "./src/screens/StatsScreen";
 import LeagueScreen from "./src/screens/LeagueScreen";
 import ShopScreen from "./src/screens/ShopScreen";
 import { colors } from "./src/theme";
-import { styles } from "./src/styles";
 
 const Tab = createBottomTabNavigator();
+
+// The loading screen stays at least this long, so the animation can play
+const SPLASH_MS = 2300;
 
 const theme = {
   ...DarkTheme,
@@ -96,13 +98,15 @@ function Main() {
     contractOffers,
     playoffs,
   } = useGame();
+  const [splashDone, setSplashDone] = useState(false);
 
-  if (!loaded) {
-    return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-      </View>
-    );
+  useEffect(() => {
+    const timer = setTimeout(() => setSplashDone(true), SPLASH_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!loaded || !splashDone) {
+    return <SplashScreen />;
   }
 
   if (player === null) {

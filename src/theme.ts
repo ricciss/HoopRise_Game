@@ -1,27 +1,30 @@
-// One place for all colors and sizes of the app
+// One place for all colors and sizes of the app.
+// Look: a night-time arcade basketball court. Deep indigo backgrounds,
+// a bright orange ball and neon accents.
 
 export const colors = {
-  bg: "#0d0f14",
-  surface: "#161a22",
-  surfaceAlt: "#1f2430",
-  border: "#2a303c",
-  text: "#f2f4f8",
-  textDim: "#a7afbd",
-  textMute: "#6f7787",
-  accent: "#ff8c00",
-  accentSoft: "#2d2110",
-  blue: "#2f6fe0",
-  blueLight: "#6aa2ff",
-  green: "#2fbf71",
-  greenDark: "#25865a",
-  red: "#e5534b",
-  redDark: "#a3322a",
-  redSoft: "#2a1517",
-  gold: "#f1c40f",
+  bg: "#14123f", // the dark court at night
+  surface: "#231e6b", // cards
+  surfaceAlt: "#342d94", // bars, inactive buttons
+  border: "#4d43c9",
+  text: "#ffffff",
+  textDim: "#d0cbff",
+  textMute: "#9d97e8",
+  accent: "#ff7a1a", // the basketball
+  accentSoft: "#46286e",
+  blue: "#2f8bff",
+  blueLight: "#7cc4ff",
+  green: "#2fe38a",
+  greenDark: "#17a35f",
+  red: "#ff4d5e",
+  redDark: "#c92c3b",
+  redSoft: "#4a1c58",
+  gold: "#ffd23f",
 };
 
+// Rounder shapes feel more like a game than a form
 export const radius = {
-  card: 16,
-  button: 14,
-  small: 10,
+  card: 22,
+  button: 18,
+  small: 12,
 };

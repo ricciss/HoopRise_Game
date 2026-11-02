@@ -11,6 +11,7 @@ import LiveGame from "../components/LiveGame";
 import EventCard from "../components/EventCard";
 import AnimatedBar from "../components/AnimatedBar";
 import PlayerBadge from "../components/PlayerBadge";
+import ArcadeButton from "../components/ArcadeButton";
 import { colors } from "../theme";
 import { styles } from "../styles";
 
@@ -161,40 +162,38 @@ export default function HomeScreen() {
 
       {gameWeek && injury ? (
         <View>
-          <Pressable style={styles.restButton} onPress={sitOut}>
-            <Text style={styles.buttonText}>Sit out (heal faster)</Text>
-          </Pressable>
-          <Pressable style={styles.hurtButton} onPress={playHurt}>
-            <Text style={styles.buttonText}>Play hurt</Text>
-          </Pressable>
+          <ArcadeButton
+            label="Sit out (heal faster)"
+            color="green"
+            onPress={sitOut}
+          />
+          <ArcadeButton
+            label="Play hurt"
+            color="red"
+            onPress={playHurt}
+            style={{ marginTop: 14 }}
+          />
           <Text style={styles.hint}>
             Playing hurt: weak performance and a{" "}
             {Math.round(WORSEN_CHANCE * 100)}% risk of making the injury worse.
           </Text>
         </View>
       ) : gameWeek ? (
-        <Pressable style={styles.gameButton} onPress={playGame}>
-          <Text style={styles.buttonText}>Play game</Text>
-        </Pressable>
+        <ArcadeButton label="Play game" color="blue" onPress={playGame} />
       ) : (
-        <Pressable style={styles.restButton} onPress={restWeek}>
-          <Text style={styles.buttonText}>
-            {injury ? "Rest (heal injury)" : "Rest"}
-          </Text>
-        </Pressable>
+        <ArcadeButton
+          label={injury ? "Rest (heal injury)" : "Rest"}
+          color="green"
+          onPress={restWeek}
+        />
       )}
 
-      <Pressable
-        style={[
-          styles.button,
-          { backgroundColor: colors.surfaceAlt, marginTop: 40 },
-        ]}
+      <ArcadeButton
+        label="New career (deletes save)"
+        color="gray"
         onPress={newCareer}
-      >
-        <Text style={[styles.buttonText, { color: colors.textDim }]}>
-          New career (deletes save)
-        </Text>
-      </Pressable>
+        style={{ marginTop: 40 }}
+      />
     </View>
   );
 }
