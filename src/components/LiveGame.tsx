@@ -1,6 +1,11 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
 import { useGame } from "../store/GameContext";
 import GameCard from "./GameCard";
+import ArcadeButton from "./ArcadeButton";
+import Confetti from "./Confetti";
+import PopIn from "./PopIn";
+import BumpText from "./BumpText";
+import ResultBanner from "./ResultBanner";
 import { styles } from "../styles";
 
 export default function LiveGame() {
@@ -15,12 +20,16 @@ export default function LiveGame() {
   if (shown >= quarters.length) {
     return (
       <View>
-        <GameCard game={game} />
-        <Pressable style={styles.gameButton} onPress={closeGame}>
-          <Text style={styles.buttonText}>
-            {seasonSummary ? "See season summary" : "Continue"}
-          </Text>
-        </Pressable>
+        {game.won && <Confetti />}
+        <ResultBanner won={game.won} opponent={game.opponent} />
+        <PopIn delay={350}>
+          <GameCard game={game} />
+        </PopIn>
+        <ArcadeButton
+          label={seasonSummary ? "See season summary" : "Continue"}
+          color="blue"
+          onPress={closeGame}
+        />
       </View>
     );
   }
@@ -37,9 +46,7 @@ export default function LiveGame() {
     <View>
       <View style={styles.gameCard}>
         <Text style={styles.gameTitle}>LIVE vs {game.opponent}</Text>
-        <Text style={styles.gameScore}>
-          {you} - {opp}
-        </Text>
+        <BumpText style={styles.gameScore} value={`${you} - ${opp}`} />
 
         {shown > 0 && (
           <View>
@@ -109,15 +116,18 @@ export default function LiveGame() {
         ))}
       </View>
 
-      <Pressable style={styles.gameButton} onPress={nextQuarter}>
-        <Text style={styles.buttonText}>
-          {shown === 0 ? "Tip off" : `Next quarter (Q${shown + 1})`}
-        </Text>
-      </Pressable>
+      <ArcadeButton
+        label={shown === 0 ? "Tip off" : `Next quarter (Q${shown + 1})`}
+        color="blue"
+        onPress={nextQuarter}
+      />
 
-      <Pressable style={styles.button} onPress={skipGame}>
-        <Text style={styles.buttonText}>Skip to end</Text>
-      </Pressable>
+      <ArcadeButton
+        label="Skip to end"
+        color="gray"
+        onPress={skipGame}
+        style={{ marginTop: 14 }}
+      />
     </View>
   );
 }
