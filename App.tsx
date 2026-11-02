@@ -6,6 +6,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { GameProvider, useGame } from "./src/store/GameContext";
 import Screen from "./src/components/Screen";
 import SplashScreen from "./src/components/SplashScreen";
+import AchievementToast from "./src/components/AchievementToast";
 import CreatePlayerScreen from "./src/screens/CreatePlayerScreen";
 import SeasonSummaryScreen from "./src/screens/SeasonSummaryScreen";
 import CollegeOffersScreen from "./src/screens/CollegeOffersScreen";
@@ -206,6 +207,7 @@ export default function App() {
     <SafeAreaProvider>
       <GameProvider>
         <Main />
+        <AchievementToast />
       </GameProvider>
     </SafeAreaProvider>
   );

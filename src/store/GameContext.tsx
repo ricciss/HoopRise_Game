@@ -194,6 +194,8 @@ interface GameState {
   claimAdReward: () => string;
   buyPack: (id: string) => string;
   achievements: string[];
+  toast: { id: number; names: string[] } | null;
+  clearToast: () => void;
   perks: Perks;
   buyService: (id: ServiceId) => string;
   contractOffers: ContractOffer[] | null;
@@ -246,6 +248,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [coins, setCoins] = useState(0);
   const [perks, setPerks] = useState<Perks>(NO_PERKS);
   const [achievements, setAchievements] = useState<string[]>([]);
+  // The newest unlocked achievements, shown as a pop-up card for a moment
+  const [toast, setToast] = useState<{ id: number; names: string[] } | null>(
+    null
+  );
   const [contractOffers, setContractOffers] = useState<
     ContractOffer[] | null
   >(null);
@@ -424,12 +430,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (fresh.length === 0) return;
     const ids = fresh.map((a) => a.id);
     setAchievements((a) => [...a, ...ids.filter((id) => !a.includes(id))]);
-    const text =
-      fresh.length <= 3
-        ? `Achievement unlocked: ${fresh.map((a) => a.name).join(", ")}!`
-        : `${fresh.length} achievements unlocked!`;
-    setMessage((m) => (m ? `${m} ${text}` : text));
+    setToast({ id: Date.now(), names: fresh.map((a) => a.name) });
   }, [loaded, player, lastGame, history, champions, earnings]);
+
+  function clearToast() {
+    setToast(null);
+  }
 
   // Picks the league team you play this week (pros only)
   function leagueOpponent(): Team | null {
@@ -1051,6 +1057,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     claimAdReward,
     buyPack,
     achievements,
+    toast,
+    clearToast,
     perks,
     buyService,
     contractOffers,
