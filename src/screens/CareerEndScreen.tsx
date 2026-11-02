@@ -1,4 +1,5 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
+import ArcadeButton from "../components/ArcadeButton";
 import { verdictColor, verdictText } from "../game/legacy";
 import { pickLabel } from "../game/league";
 import { formatMoney } from "../game/market";
@@ -105,9 +106,11 @@ export default function CareerEndScreen() {
         </View>
       )}
 
-      <Pressable style={styles.gameButton} onPress={newCareer}>
-        <Text style={styles.buttonText}>Start a new career</Text>
-      </Pressable>
+      <ArcadeButton
+        label="Start a new career"
+        color="orange"
+        onPress={newCareer}
+      />
     </View>
   );
 }

@@ -1,4 +1,5 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
+import ArcadeButton from "../components/ArcadeButton";
 import { pickLabel, roleLabel, strengthLabel } from "../game/league";
 import { useGame } from "../store/GameContext";
 import { styles } from "../styles";
@@ -65,11 +66,11 @@ export default function DraftScreen() {
         })}
       </View>
 
-      <Pressable style={styles.gameButton} onPress={finishDraft}>
-        <Text style={styles.buttonText}>
-          Join {draft.userTeamName}
-        </Text>
-      </Pressable>
+      <ArcadeButton
+        label={`Join ${draft.userTeamName}`}
+        color="blue"
+        onPress={finishDraft}
+      />
     </View>
   );
 }

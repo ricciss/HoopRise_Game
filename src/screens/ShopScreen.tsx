@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { View, Text, Pressable, Alert } from "react-native";
+import { View, Text, Alert } from "react-native";
+import ArcadeButton from "../components/ArcadeButton";
 import {
   ITEMS,
   PACKS,
@@ -92,16 +93,16 @@ export default function ShopScreen() {
         <Text style={styles.highlightText}>
           Test ad: watch for {AD_SECONDS} seconds to earn {AD_REWARD} coins.
         </Text>
-        <Pressable
-          style={[styles.gameButton, adLeft !== null && { opacity: 0.4 }]}
-          onPress={() => adLeft === null && setAdLeft(AD_SECONDS)}
-        >
-          <Text style={styles.buttonText}>
-            {adLeft === null
+        <ArcadeButton
+          label={
+            adLeft === null
               ? `Watch ad (+${AD_REWARD} coins)`
-              : `Ad playing... ${adLeft}`}
-          </Text>
-        </Pressable>
+              : `Ad playing... ${adLeft}`
+          }
+          color="blue"
+          disabled={adLeft !== null}
+          onPress={() => setAdLeft(AD_SECONDS)}
+        />
       </View>
 
       <View style={styles.gameCard}>
@@ -110,15 +111,13 @@ export default function ShopScreen() {
           Prices are for show only. Nothing is charged.
         </Text>
         {PACKS.map((pack) => (
-          <Pressable
+          <ArcadeButton
             key={pack.id}
-            style={[styles.button, { marginTop: 12 }]}
+            label={`${pack.name} · ${pack.coins} coins · ${pack.price}`}
+            color="orange"
             onPress={() => confirmPack(pack)}
-          >
-            <Text style={styles.buttonText}>
-              {pack.name} · {pack.coins} coins · {pack.price}
-            </Text>
-          </Pressable>
+            style={{ marginTop: 12 }}
+          />
         ))}
       </View>
 
@@ -137,16 +136,17 @@ export default function ShopScreen() {
                 {perks[service.id] ? " · active" : ""}
               </Text>
               <Text style={styles.highlightText}>{service.description}</Text>
-              <Pressable
-                style={[styles.button, { marginTop: 8 }, reason !== null && { opacity: 0.4 }]}
-                onPress={() => setNote(buyService(service.id))}
-              >
-                <Text style={styles.buttonText}>
-                  {salary === null
+              <ArcadeButton
+                label={
+                  salary === null
                     ? "Pros only"
-                    : `Hire for ${formatMoney(servicePrice(service, salary))}`}
-                </Text>
-              </Pressable>
+                    : `Hire for ${formatMoney(servicePrice(service, salary))}`
+                }
+                color="orange"
+                dimmed={reason !== null}
+                onPress={() => setNote(buyService(service.id))}
+                style={{ marginTop: 10 }}
+              />
               {reason && <Text style={styles.hint}>{reason}</Text>}
             </View>
           );
@@ -165,12 +165,12 @@ export default function ShopScreen() {
           <View key={item.id} style={styles.gameCard}>
             <Text style={styles.gameTitle}>{item.name.toUpperCase()}</Text>
             <Text style={styles.highlightText}>{item.description}</Text>
-            <Pressable
-              style={[styles.restButton, reason !== null && { opacity: 0.4 }]}
+            <ArcadeButton
+              label={`Buy for ${item.price} coins`}
+              color="green"
+              dimmed={reason !== null}
               onPress={() => setNote(buyItem(item.id))}
-            >
-              <Text style={styles.buttonText}>Buy for {item.price} coins</Text>
-            </Pressable>
+            />
             {reason && <Text style={styles.hint}>{reason}</Text>}
           </View>
         );

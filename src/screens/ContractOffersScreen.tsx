@@ -1,4 +1,5 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
+import ArcadeButton from "../components/ArcadeButton";
 import { strengthLabel } from "../game/league";
 import { formatMoney } from "../game/market";
 import { useGame } from "../store/GameContext";
@@ -35,12 +36,11 @@ export default function ContractOffersScreen() {
                 • {strengthLabel(team.strength)}
               </Text>
             )}
-            <Pressable
-              style={styles.gameButton}
+            <ArcadeButton
+              label="Sign this contract"
+              color="blue"
               onPress={() => chooseContract(i)}
-            >
-              <Text style={styles.buttonText}>Sign this contract</Text>
-            </Pressable>
+            />
           </View>
         );
       })}

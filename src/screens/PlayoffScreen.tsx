@@ -1,4 +1,5 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
+import ArcadeButton from "../components/ArcadeButton";
 import { ROUND_NAMES, userMatch, userOpponentId } from "../game/playoffs";
 import { useGame } from "../store/GameContext";
 import { styles } from "../styles";
@@ -39,11 +40,11 @@ export default function PlayoffScreen() {
         </View>
       )}
 
-      <Pressable style={styles.gameButton} onPress={playPlayoffGame}>
-        <Text style={styles.buttonText}>
-          Play the {roundName.toLowerCase()}
-        </Text>
-      </Pressable>
+      <ArcadeButton
+        label={`Play the ${roundName.toLowerCase()}`}
+        color="blue"
+        onPress={playPlayoffGame}
+      />
 
       <View style={[styles.gameCard, { marginTop: 20 }]}>
         <Text style={styles.gameTitle}>BRACKET</Text>

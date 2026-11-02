@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
+import ArcadeButton from "../components/ArcadeButton";
 import { levelForSeason } from "../game/levels";
 import { formatMoney } from "../game/market";
 import { PLAYOFF_SPOTS, rankStandings } from "../game/standings";
@@ -145,31 +146,41 @@ export default function SeasonSummaryScreen() {
 
       {!forced &&
         (toCollege ? (
-          <Pressable style={styles.gameButton} onPress={openOffers}>
-            <Text style={styles.buttonText}>See college offers</Text>
-          </Pressable>
+          <ArcadeButton
+            label="See college offers"
+            color="blue"
+            onPress={openOffers}
+          />
         ) : toPro ? (
-          <Pressable style={styles.gameButton} onPress={openDraft}>
-            <Text style={styles.buttonText}>Go to the draft</Text>
-          </Pressable>
+          <ArcadeButton
+            label="Go to the draft"
+            color="blue"
+            onPress={openDraft}
+          />
         ) : contractEnded ? (
-          <Pressable style={styles.gameButton} onPress={openContractOffers}>
-            <Text style={styles.buttonText}>See contract offers</Text>
-          </Pressable>
+          <ArcadeButton
+            label="See contract offers"
+            color="blue"
+            onPress={openContractOffers}
+          />
         ) : (
-          <Pressable style={styles.gameButton} onPress={nextSeason}>
-            <Text style={styles.buttonText}>
-              {movingUp
+          <ArcadeButton
+            label={
+              movingUp
                 ? `Move up to ${upcoming.name}`
-                : `Start season ${seasonSummary.season + 1}`}
-            </Text>
-          </Pressable>
+                : `Start season ${seasonSummary.season + 1}`
+            }
+            color="blue"
+            onPress={nextSeason}
+          />
         ))}
 
       {mayRetire && !forced && !confirming && (
-        <Pressable style={styles.hurtButton} onPress={() => setConfirming(true)}>
-          <Text style={styles.buttonText}>Retire from basketball</Text>
-        </Pressable>
+        <ArcadeButton
+          label="Retire from basketball"
+          color="red"
+          onPress={() => setConfirming(true)}
+        />
       )}
 
       {mayRetire && (forced || confirming) && (
@@ -179,18 +190,18 @@ export default function SeasonSummaryScreen() {
               ? `At ${player.age} it is time to hang up the sneakers. Your career ends here.`
               : "Retiring ends your career. This cannot be undone."}
           </Text>
-          <Pressable style={styles.hurtButton} onPress={retire}>
-            <Text style={styles.buttonText}>
-              {forced ? "End my career" : "Yes, retire"}
-            </Text>
-          </Pressable>
+          <ArcadeButton
+            label={forced ? "End my career" : "Yes, retire"}
+            color="red"
+            onPress={retire}
+          />
           {!forced && (
-            <Pressable
-              style={styles.button}
+            <ArcadeButton
+              label="Keep playing"
+              color="orange"
               onPress={() => setConfirming(false)}
-            >
-              <Text style={styles.buttonText}>Keep playing</Text>
-            </Pressable>
+              style={{ marginTop: 14 }}
+            />
           )}
         </View>
       )}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable } from "react-native";
+import ArcadeButton from "../components/ArcadeButton";
 import { Position } from "../game/player";
 import { verdictColor } from "../game/legacy";
 import { useGame } from "../store/GameContext";
@@ -36,12 +37,12 @@ export default function CreatePlayerScreen() {
         ))}
       </View>
 
-      <Pressable
-        style={styles.button}
+      <ArcadeButton
+        label="Create player"
+        color="orange"
         onPress={() => createCareer(name, position)}
-      >
-        <Text style={styles.buttonText}>Create player</Text>
-      </Pressable>
+        style={{ marginTop: 24 }}
+      />
 
       {pastCareers.length > 0 && (
         <View style={[styles.gameCard, { marginTop: 30 }]}>

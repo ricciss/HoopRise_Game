@@ -28,12 +28,14 @@ export default function ArcadeButton({
   onPress,
   color = "orange",
   disabled = false,
+  dimmed = false,
   style,
 }: {
   label: string;
   onPress: () => void;
   color?: ArcadeColor;
-  disabled?: boolean;
+  disabled?: boolean; // cannot be pressed
+  dimmed?: boolean; // looks faded but can still be pressed
   style?: StyleProp<ViewStyle>;
 }) {
   const press = useRef(new Animated.Value(0)).current; // 0 up, 1 pushed down
@@ -56,7 +58,7 @@ export default function ArcadeButton({
       onPress={onPress}
       style={[{ marginTop: 20 }, style]}
     >
-      <View style={{ paddingBottom: DEPTH, opacity: disabled ? 0.45 : 1 }}>
+      <View style={{ paddingBottom: DEPTH, opacity: disabled || dimmed ? 0.45 : 1 }}>
         {/* The thick edge under the button */}
         <View
           style={{

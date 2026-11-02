@@ -1,4 +1,5 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
+import ArcadeButton from "../components/ArcadeButton";
 import { TIER_LABEL, perkLines } from "../game/colleges";
 import { useGame } from "../store/GameContext";
 import { styles } from "../styles";
@@ -27,12 +28,11 @@ export default function CollegeOffersScreen() {
               • {line}
             </Text>
           ))}
-          <Pressable
-            style={styles.gameButton}
+          <ArcadeButton
+            label="Sign with this college"
+            color="blue"
             onPress={() => chooseCollege(college.id)}
-          >
-            <Text style={styles.buttonText}>Sign with this college</Text>
-          </Pressable>
+          />
         </View>
       ))}
     </View>
